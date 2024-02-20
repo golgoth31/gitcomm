@@ -16,16 +16,19 @@ func main() {
 		"\nSource https://github.com/karantin2020/gitcomm")
 	app.Version("V version", version.BuildDetails())
 
-	app.Spec = "[-v] [-Ast] | [-u]"
+	app.Spec = "[-v] [-Acst] | [-u]"
 
 	var (
 		// declare the -r flag as a boolean flag
+		verbose = app.BoolOpt("v verbose", false, "Switch log output")
+
 		addFiles = app.BoolOpt("A addAll", false, "Adds, modifies, and removes index entries "+
 			"to match the working tree. Evals `git add -A`")
-		verbose = app.BoolOpt("v verbose", false, "Switch log output")
-		show    = app.BoolOpt("s show", false, "Show last commit or not. "+
+		capitalize = app.BoolOpt("c capitalize", false, "Capitalize first letter of the strings")
+		show       = app.BoolOpt("s show", false, "Show last commit or not. "+
 			"Evals `git show -s` in the end of execution")
-		tag  = app.BoolOpt("t tag", false, "Create an annonated tag for the next logical version")
+		tag = app.BoolOpt("t tag", false, "Create an annonated tag for the next logical version")
+
 		undo = app.BoolOpt("u undo", false, "Revert last commit")
 	)
 
@@ -47,7 +50,7 @@ func main() {
 		}
 		if gitcomm.CheckForUncommited() {
 			log.Printf("there are new changes in working directory\n")
-			msg := gitcomm.Prompt()
+			msg := gitcomm.Prompt(*capitalize)
 			gitcomm.GitExec(*addFiles, *show, msg)
 		} else {
 			log.Printf("nothing to commit, working tree clean\n")

@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	msg = Message{
+	msg = &Message{
 		Type:    "feat",
 		Subject: "",
 		Body:    "",
@@ -29,18 +29,18 @@ var (
 	}
 )
 
-func fillMessage(msg *Message) {
+func (m *Message) fillMessage() {
 	var err error
-	msg.Type, err = bb.PromptAfterSelect("Choose a type(<scope>)", types)
+	m.Type, err = bb.PromptAfterSelect("Choose a type(<scope>)", types)
 	checkInterrupt(err)
 	p := bb.Prompt{
 		BasicPrompt: bb.BasicPrompt{
 			Label:     "Type in the subject",
-			Formatter: linterSubject,
-			Validate:  validateSubject,
+			Formatter: m.linterSubject,
+			Validate:  m.validateSubject,
 		},
 	}
-	msg.Subject, err = p.Run()
+	m.Subject, err = p.Run()
 	checkInterrupt(err)
 	mlBody := bb.MultilinePrompt{
 		BasicPrompt: bb.BasicPrompt{
@@ -48,11 +48,11 @@ func fillMessage(msg *Message) {
 			Default: `# If applied, this commit will...
 # [Add/Fix/Remove/Update/Refactor/Document] [issue #id] [summary]
 `,
-			Formatter: linterBody,
-			Validate:  validateBody,
+			Formatter: m.linterBody,
+			Validate:  m.validateBody,
 		},
 	}
-	msg.Body, err = mlBody.Run()
+	m.Body, err = mlBody.Run()
 	checkInterrupt(err)
 	// # Why is it necessary? (Bug fix, feature, improvements?)
 	// -
@@ -64,7 +64,7 @@ func fillMessage(msg *Message) {
 	mlFoot := bb.MultilinePrompt{
 		BasicPrompt: bb.BasicPrompt{
 			Label:     "Type in the foot",
-			Formatter: linterFoot,
+			Formatter: m.linterFoot,
 			Validate: func(s string) error {
 				if s == "" {
 					return bb.NewValidationError("Foot must not be empty string")
@@ -76,13 +76,14 @@ func fillMessage(msg *Message) {
 			},
 		},
 	}
-	msg.Foot, err = mlFoot.Run()
+	m.Foot, err = mlFoot.Run()
 	checkInterrupt(err)
 }
 
 // Prompt function assignes user input to Message struct
-func Prompt() string {
-	fillMessage(&msg)
+func Prompt(capitalize bool) string {
+	msg.Capitalize = capitalize
+	msg.fillMessage()
 	gitMsg := msg.String() + "\n"
 	Info("\nCommit message is:\n%s", gitMsg)
 	for {
@@ -141,7 +142,7 @@ func PromptConfirm(msg string) bool {
 	return true
 }
 
-func linterSubject(s string) string {
+func (m *Message) linterSubject(s string) string {
 	if len(s) == 0 {
 		return s
 	}
@@ -151,11 +152,13 @@ func linterSubject(s string) string {
 	s = strings.TrimSuffix(s, "...")
 	// Then strings.Title the first word in string
 	flds := strings.Fields(s)
-	flds[0] = strings.Title(flds[0])
+	if m.Capitalize {
+		flds[0] = strings.Title(flds[0])
+	}
 	return strings.Join(flds, " ")
 }
 
-func linterBody(s string) string {
+func (m *Message) linterBody(s string) string {
 	if len(s) == 0 {
 		return s
 	}
@@ -164,7 +167,7 @@ func linterBody(s string) string {
 	// s = strings.TrimLeft(s, "\t\n\v\f\r")
 	var upl = func(sl string) string {
 		rs := []rune(sl)
-		if len(rs) > 0 {
+		if len(rs) > 0 && m.Capitalize {
 			rs[0] = unicode.ToUpper(rs[0])
 		}
 		return string(rs)
@@ -223,7 +226,7 @@ func wrapLine(l string, n int) []string {
 	return out
 }
 
-func linterFoot(s string) string {
+func (m *Message) linterFoot(s string) string {
 	if len(s) == 0 {
 		return s
 	}
@@ -238,7 +241,7 @@ func linterFoot(s string) string {
 		if strings.HasPrefix(strs[i-1], "* ") {
 			strs[i-1] = strings.TrimPrefix(strs[i-1], "* ")
 		}
-		strs[i-1] = linterSubject(strs[i-1])
+		strs[i-1] = m.linterSubject(strs[i-1])
 		strs[i-1] = "* " + strs[i-1]
 		out = append(append([]string{}, strs[i-1]), out...)
 	}
@@ -255,7 +258,7 @@ func validator(n int) func(val interface{}) error {
 	}
 }
 
-func validateBody(s string) error {
+func (m *Message) validateBody(s string) error {
 	if s == "" {
 		return bb.NewValidationError("Body must not be empty string")
 	}
@@ -268,7 +271,7 @@ func validateBody(s string) error {
 	return nil
 }
 
-func validateSubject(s string) error {
+func (m *Message) validateSubject(s string) error {
 	if s == "" {
 		return bb.NewValidationError("Subject must not be empty string")
 	}

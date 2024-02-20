@@ -1,0 +1,24 @@
+on:
+  push:
+    tags:
+      - "v*.*.*"
+name: Release
+jobs:
+  release:
+    name: Build and release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.21.1
+        id: go
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v4
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v5
+        with:
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
