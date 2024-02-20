@@ -6,7 +6,7 @@ BUILD_VERSION ?= $(shell git describe --always --tags)
 BUILD_TAGS    ?=
 GOPATH        ?= $(shell go env GOPATH)
 
-BASEPATH = github.com/karantin2020/gitcomm/version
+BASEPATH = github.com/golgoth31/gitcomm/version
 
 export GO111MODULE := off
 

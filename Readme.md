@@ -1,35 +1,36 @@
-[![GoDoc](https://godoc.org/github.com/karantin2020/gitcomm?status.svg)](github.com/karantin2020/gitcomm) [![Go Report Card](https://goreportcard.com/badge/github.com/karantin2020/gitcomm)](https://goreportcard.com/report/github.com/karantin2020/gitcomm) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GoDoc](https://godoc.org/github.com/golgoth31/gitcomm?status.svg)](github.com/golgoth31/gitcomm) [![Go Report Card](https://goreportcard.com/badge/github.com/golgoth31/gitcomm)](https://goreportcard.com/report/github.com/golgoth31/gitcomm) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Git commit message formatter
 
-Cli app to implement git message template  
+Cli app to implement git message template
 Automate your commit message workflow with some rules
 
 The name 'gitcomm' is short 'git commit message'.
 
 Usage:
 
-![demo](https://github.com/karantin2020/gitcomm/raw/master/docs/screen.gif)
+![demo](https://github.com/golgoth31/gitcomm/raw/master/docs/screen.gif)
 
 Download and install it:
 
 ```sh
-$ go get -u -d github.com/karantin2020/gitcomm/cmd
-$ go install -o gitcomm github.com/karantin2020/gitcomm/cmd
+$ go get -u -d github.com/golgoth31/gitcomm/cmd
+$ go install -o gitcomm github.com/golgoth31/gitcomm/cmd
 ```
 
-Or install precompiled release binary.  
+Or install precompiled release binary.
 
 ```sh
-Usage: gitcomm [-v] [-Ast] | [-u]
+Usage: gitcomm [-v] [-Acst] | [-u]
 
 Automate git commit messaging
 
-Source https://github.com/karantin2020/gitcomm
-                  
-Options:          
+Source https://github.com/golgoth31/gitcomm
+
+Options:
   -V, --version   Show the version and exit
   -A, --addAll    Adds, modifies, and removes index entries to match the working tree. Evals `git add -A`
+  -c, --no-capitalize    Do not capitalize first letter of the strings
   -v, --verbose   Switch log output
   -s, --show      Show last commit or not. Evals `git show -s` in the end of execution
   -t, --tag       Create an annonated tag for the next logical version
@@ -55,14 +56,14 @@ Options:
 - chore (update grunt tasks etc; no production code change)
 - version (description of version upgrade)
 
-Scope is just the scope of the change. Something like (admin) or (teacher).  
-Subject should use imperative tone and say what you did.  
-The body should go into detail about changes made. Use the body to explain what and why vs. how  
+Scope is just the scope of the change. Something like (admin) or (teacher).
+Subject should use imperative tone and say what you did.
+The body should go into detail about changes made. Use the body to explain what and why vs. how
 The footer should contain any git issue references or actions.
 
 #### Issue Processing
 
-ISSUE_KEY #comment This is a comment  
+ISSUE_KEY #comment This is a comment
 ISSUE_KEY #resolved
 
 Template is from this repo https://github.com/williampeterpaul/.git-commit-template
@@ -75,7 +76,7 @@ Template is from this repo https://github.com/williampeterpaul/.git-commit-templ
 
 1. Separate subject from body with a blank line
 2. Limit the subject line to 72 characters
-3. Capitalize the subject line
+3. Capitalize the subject line by default
 4. Do not end the subject line with a period
 5. ~~Use the imperative mood in the subject line~~ // That rule is for user impl
 6. Wrap the body at 72 characters. Limit the body length to 320 characters

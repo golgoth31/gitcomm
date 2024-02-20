@@ -1,4 +1,4 @@
-module github.com/karantin2020/gitcomm
+module github.com/golgoth31/gitcomm
 
 go 1.21.1
 
