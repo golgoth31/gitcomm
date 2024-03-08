@@ -81,8 +81,8 @@ func (m *Message) fillMessage() {
 }
 
 // Prompt function assignes user input to Message struct
-func Prompt(noCapitalize bool) string {
-	msg.NoCapitalize = noCapitalize
+func Prompt(capitalize bool) string {
+	msg.Capitalize = capitalize
 	msg.fillMessage()
 	gitMsg := msg.String() + "\n"
 	Info("\nCommit message is:\n%s", gitMsg)
@@ -152,7 +152,7 @@ func (m *Message) linterSubject(s string) string {
 	s = strings.TrimSuffix(s, "...")
 	// Then strings.Title the first word in string
 	flds := strings.Fields(s)
-	if !m.NoCapitalize {
+	if m.Capitalize {
 		flds[0] = strings.Title(flds[0])
 	}
 	return strings.Join(flds, " ")
@@ -167,7 +167,7 @@ func (m *Message) linterBody(s string) string {
 	// s = strings.TrimLeft(s, "\t\n\v\f\r")
 	var upl = func(sl string) string {
 		rs := []rune(sl)
-		if len(rs) > 0 && !m.NoCapitalize {
+		if len(rs) > 0 && m.Capitalize {
 			rs[0] = unicode.ToUpper(rs[0])
 		}
 		return string(rs)

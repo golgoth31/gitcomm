@@ -14,8 +14,8 @@ type Message struct {
 	// Body message field
 	Body string
 	// Foot message field
-	Foot         string
-	NoCapitalize bool
+	Foot       string
+	Capitalize bool
 }
 
 func (m *Message) String() string {
