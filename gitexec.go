@@ -6,12 +6,15 @@ import (
 )
 
 // GitExec function performs git workflow
-func GitExec(addAll, show bool, msg string) {
+func GitExec(addAll, show bool, noSignoff bool, msg string) {
 	if addAll {
 		gitColorCmd("add", "-A")
 	}
 	gitColorCmd("add", "-u")
-	gitColorCmd("commit", "-m", msg)
+	gitColorCmd("commit", "-s", "-m", msg)
+	if noSignoff {
+		gitColorCmd("commit", "-m", msg)
+	}
 	if show {
 		gitColorCmd("show", "-s")
 	}
