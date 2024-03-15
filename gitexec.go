@@ -1,16 +1,30 @@
 package gitcomm
 
 import (
+	"context"
+	"log"
+	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/golgoth31/gitcomm/pkg/gptscript"
 )
 
 // GitExec function performs git workflow
 func GitExec(addAll, show bool, noSignoff bool, msg string) {
+	ctx := context.Background()
 	if addAll {
 		gitColorCmd("add", "-A")
 	}
 	gitColorCmd("add", "-u")
+
+	gpt := gptscript.GPTScript{}
+	if err := gpt.Run(ctx, nil); err != nil {
+		log.Fatalf("error: %v\n", err)
+	}
+
+	os.Exit(0)
+
 	gitColorCmd("commit", "-s", "-m", msg)
 	if noSignoff {
 		gitColorCmd("commit", "-m", msg)
