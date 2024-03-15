@@ -98,6 +98,7 @@ func (r *GPTScript) Run(ctx context.Context, args []string) error {
 	fmt.Print(s)
 	if !strings.HasSuffix(s, "\n") {
 		fmt.Println()
+
 	}
 
 	return nil
