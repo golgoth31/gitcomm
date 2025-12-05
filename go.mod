@@ -8,6 +8,7 @@ require (
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/gage-technologies/mistral-go v1.1.0
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376
+	github.com/go-git/gcfg/v2 v2.0.2
 	github.com/go-git/go-git/v5 v5.16.4
 	github.com/hiddeco/sshsig v0.2.0
 	github.com/openai/openai-go/v3 v3.8.1
