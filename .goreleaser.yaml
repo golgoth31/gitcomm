@@ -20,7 +20,7 @@ builds:
     #     goarch: arm64
     #   - goos: darwin
     #     goarch: amd64
-    main: ./cmd
+    main: ./cmd/gitcomm
     binary: gitcomm
     ldflags:
       - -s
