@@ -1,0 +1,44 @@
+# gitcomm Development Guidelines
+
+Auto-generated from all feature plans. Last updated: 2025-11-29
+
+## Active Technologies
+- In-memory only (no persistent storage). Staging state snapshot stored in memory during CLI execution. (002-auto-stage-restore)
+- N/A (logging configuration is in-memory only) (003-debug-logging)
+- N/A (UI state is in-memory only during prompt session) (004-improve-commit-ui)
+- N/A (display-only feature, no data persistence) (006-type-confirmation-display)
+- N/A (no data persistence, API calls only) (007-mistral-provider)
+- N/A (stateless API calls) (010-openai-responses-api)
+- N/A (in-memory prompt generation) (011-unify-ai-prompts)
+- N/A (in-memory config extraction, no persistence) (012-git-config-commit)
+- N/A (in-memory state only) (009-ai-commit-options)
+- N/A (in-memory prompt state) (001-rewrite-cli-prompts)
+- N/A (CLI tool, no persistent storage) (013-huh-prompts)
+- N/A (in-memory diff computation, no persistence) (014-worktree-diff)
+- N/A (in-memory state processing) (005-addall-new-files)
+
+- Go 1.25.0+ (001-git-commit-cli)
+
+## Project Structure
+
+```text
+src/
+tests/
+```
+
+## Commands
+
+# Add commands for Go 1.25.0+
+
+## Code Style
+
+Go 1.25.0+: Follow standard conventions
+
+## Recent Changes
+- 005-addall-new-files: Added Go 1.25.0
+- 014-worktree-diff: Added Go 1.25.0+
+- 013-huh-prompts: Added Go 1.25.0
+
+
+<!-- MANUAL ADDITIONS START -->
+<!-- MANUAL ADDITIONS END -->
