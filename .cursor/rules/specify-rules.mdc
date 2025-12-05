@@ -16,6 +16,7 @@ Auto-generated from all feature plans. Last updated: 2025-11-29
 - N/A (CLI tool, no persistent storage) (013-huh-prompts)
 - N/A (in-memory diff computation, no persistence) (014-worktree-diff)
 - N/A (in-memory state processing) (005-addall-new-files)
+- File system (YAML config file at `~/.gitcomm/config.yaml` or custom path) (015-ensure-config-exists)
 
 - Go 1.25.0+ (001-git-commit-cli)
 
@@ -35,9 +36,9 @@ tests/
 Go 1.25.0+: Follow standard conventions
 
 ## Recent Changes
+- 014-env-var-placeholders: Added Go 1.25.0+
+- 015-ensure-config-exists: Added Go 1.25.0+
 - 005-addall-new-files: Added Go 1.25.0
-- 014-worktree-diff: Added Go 1.25.0+
-- 013-huh-prompts: Added Go 1.25.0
 
 
 <!-- MANUAL ADDITIONS START -->

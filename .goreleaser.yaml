@@ -1,0 +1,46 @@
+version: 2
+env:
+  - GO111MODULE=on
+  - CGO_ENABLED=0
+  - GO_MODULENAME=github.com/golgoth31/gitcomm
+before:
+  hooks:
+    - go mod download
+builds:
+  - goarch:
+      - amd64
+      - arm64
+    goos:
+      - linux
+      - darwin
+    goamd64:
+      - v3
+    # ignore:
+    #   - goos: linux
+    #     goarch: arm64
+    #   - goos: darwin
+    #     goarch: amd64
+    main: ./cmd/gitcomm
+    binary: gitcomm
+    ldflags:
+      - -s
+      - -w
+      - -X "{{.Env.GO_MODULENAME}}/internal/version.version={{.Tag}}"
+      - -X "{{.Env.GO_MODULENAME}}/internal/version.lastCommitTime={{.Date}}"
+      - -X "{{.Env.GO_MODULENAME}}/internal/version.lastCommitSHA={{.ShortCommit}}"
+      - -X "{{.Env.GO_MODULENAME}}/internal/version.gitBranch={{.Branch}}"
+archives:
+  - formats:
+      - binary
+    name_template: "{{ .Binary }}_{{ .Tag }}_{{ .Os }}_{{ .Arch }}"
+checksum:
+  name_template: "gitcomm_SHA256SUMS.txt"
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^Merge branch"

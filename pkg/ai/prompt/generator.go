@@ -43,6 +43,11 @@ func (g *UnifiedPromptGenerator) GenerateSystemMessage(validator conventional.Me
 	var sb strings.Builder
 
 	sb.WriteString("You are a git commit message generator. When receiving a git diff, you will ONLY generate commit messages following the Conventional Commits specification.\n\n")
+	sb.WriteString("The message should convey why something was changed and not what was changed.\n\n")
+	sb.WriteString("Only include changed to code files and language specific files like go.mod, package.json, etc.\n")
+	sb.WriteString("Exclude the go.sum file if it is present.\n\n")
+	sb.WriteString("Do not use markdown format for the output.\n\n")
+	sb.WriteString("If there are no changes abort.\n\n")
 	sb.WriteString("Format: type(scope): subject\n\nbody\n\nfooter\n\n")
 	sb.WriteString("Validation Rules:\n")
 
