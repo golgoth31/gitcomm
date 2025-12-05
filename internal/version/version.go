@@ -27,7 +27,7 @@ Commit timestamp  : %v
 Branch            : %v
 Go version        : %v
 %s.
-Copyright 2019-2020 @karantin2020.
+Copyright https://github.com/golgoth31/gitcomm.
 `,
 		version, ExecutableChecksum(), lastCommitSHA, lastCommitTime, gitBranch,
 		runtime.Version(), licenseInfo)
