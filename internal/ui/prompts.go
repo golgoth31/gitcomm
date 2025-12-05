@@ -388,10 +388,12 @@ func PromptCommitTypeWithPreselection(reader *bufio.Reader, preselectedType stri
 func PromptAIUsage(reader *bufio.Reader, tokenCount int) (bool, error) {
 	var useAI bool = true // Default to "yes" (true) for AI usage
 
-	message := fmt.Sprintf("Estimated tokens: %d\nUse AI to generate commit message?", tokenCount)
+	estimatedTokens := fmt.Sprintf("\nEstimated tokens: %d", tokenCount)
+	message := "Use AI to generate commit message?"
 
 	form := huh.NewForm(
 		huh.NewGroup(
+			huh.NewNote().Title(estimatedTokens),
 			huh.NewConfirm().
 				Title(message).
 				Value(&useAI),
