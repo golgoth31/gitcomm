@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/go-git/gcfg"
+	"github.com/go-git/gcfg/v2"
 	"github.com/golgoth31/gitcomm/internal/utils"
 )
 
