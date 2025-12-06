@@ -104,7 +104,9 @@ GitComm uses official Go SDKs for AI providers:
 - **Anthropic**: [github.com/anthropics/anthropic-sdk-go](https://github.com/anthropics/anthropic-sdk-go)
 - **Mistral**: [github.com/gage-technologies/mistral-go](https://github.com/gage-technologies/mistral-go)
 
-1. Create configuration file at `~/.gitcomm/config.yaml`:
+1. Configuration file is automatically created at `~/.gitcomm/config.yaml` when you first run GitComm. If the file doesn't exist, it will be created as an empty file with secure permissions (0600). You can also specify a custom path using the `--config` flag.
+
+   The config file will be created automatically with the following structure:
 
 ```yaml
 ai:
@@ -120,6 +122,8 @@ ai:
       api_key: ${MISTRAL_API_KEY}
       model: mistral-large-latest
 ```
+
+   **Note**: The config file and parent directories (`~/.gitcomm/`) are automatically created if they don't exist. The file is created with restrictive permissions (0600) to protect your API keys.
 
 2. Set environment variables:
 

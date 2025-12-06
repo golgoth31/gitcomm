@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/golgoth31/gitcomm/internal/model"
+	"github.com/golgoth31/gitcomm/internal/utils"
 	"github.com/spf13/viper"
 )
 
@@ -32,6 +33,36 @@ func LoadConfig(configPath string) (*Config, error) {
 			return nil, fmt.Errorf("failed to get home directory: %w", err)
 		}
 		configPath = filepath.Join(homeDir, ".gitcomm", "config.yaml")
+	}
+
+	// T013: Validate path is not a directory
+	if info, err := os.Stat(configPath); err == nil && info.Mode().IsDir() {
+		return nil, fmt.Errorf("config path is a directory, not a file: %s", configPath)
+	}
+
+	// T012: Check if config file exists, create if missing
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		// T014: Create parent directories
+		configDir := filepath.Dir(configPath)
+		if err := os.MkdirAll(configDir, 0755); err != nil {
+			return nil, fmt.Errorf("failed to create config directory %s: %w", configDir, err)
+		}
+
+		// T015: Create empty file with O_CREATE|O_WRONLY|O_EXCL flags
+		// T016: Set file permissions to 0600
+		file, err := os.OpenFile(configPath, os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0600)
+		if err != nil {
+			// T017: Handle race condition (file created by another process)
+			if os.IsExist(err) {
+				// File was created by another process, treat as success
+			} else {
+				return nil, fmt.Errorf("failed to create config file: %w", err)
+			}
+		} else {
+			file.Close()
+			// T018: Log file creation
+			utils.Logger.Debug().Str("path", configPath).Msg("Created config file")
+		}
 	}
 
 	// Configure viper
