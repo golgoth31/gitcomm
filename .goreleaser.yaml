@@ -35,8 +35,6 @@ archives:
     name_template: "{{ .Binary }}_{{ .Tag }}_{{ .Os }}_{{ .Arch }}"
 checksum:
   name_template: "gitcomm_SHA256SUMS.txt"
-snapshot:
-  name_template: "{{ .Tag }}-next"
 changelog:
   sort: asc
   filters:
