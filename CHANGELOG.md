@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Config File Auto-Creation**: Configuration file (`~/.gitcomm/config.yaml`) is now automatically created if it doesn't exist when loading configuration
+  - Empty config file (0 bytes) is created with secure permissions (0600)
+  - Parent directories are automatically created recursively with default permissions (0755)
+  - Works with both default path (`~/.gitcomm/config.yaml`) and custom paths specified via `--config` flag
+  - Clear error messages for permission and disk space issues
+  - Race condition handling for concurrent file creation attempts
+  - Debug logging when file is created (only when file is actually created, not when it already exists)
+
 ### Changed
 - **CLI Prompts Migration to Huh Library**: All CLI prompts have been migrated from custom Bubble Tea implementations to the `huh` library
   - All prompts now use `huh` library (`github.com/charmbracelet/huh`) for consistent, modern UI
