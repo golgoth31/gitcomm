@@ -63,12 +63,7 @@ func (p *OpenAIProvider) GenerateCommitMessage(ctx context.Context, repoState *m
 	// Prepare model
 	modelName := p.config.Model
 	if modelName == "" {
-		modelName = shared.ChatModelGPT4_1
-	}
-
-	maxTokens := p.config.MaxTokens
-	if maxTokens == 0 {
-		maxTokens = 500
+		modelName = shared.ChatModelGPT4_1Nano
 	}
 
 	// Convert messages to Responses API input format
@@ -98,8 +93,7 @@ func (p *OpenAIProvider) GenerateCommitMessage(ctx context.Context, repoState *m
 		Input: responses.ResponseNewParamsInputUnion{
 			OfInputItemList: inputItems,
 		},
-		MaxOutputTokens: openai.Int(int64(maxTokens)),
-		Store:           openai.Bool(false), // Stateless mode
+		Store: openai.Bool(false), // Stateless mode
 	}
 
 	// Execute Responses API call with context (respects cancellation/timeout)
@@ -109,6 +103,8 @@ func (p *OpenAIProvider) GenerateCommitMessage(ctx context.Context, repoState *m
 		utils.Logger.Debug().Err(err).Msg("Error generating commit message")
 		return "", p.mapSDKError(err)
 	}
+
+	utils.Logger.Debug().Msgf("Responses API response: %+v", resp)
 
 	// Extract message content from Responses API response
 	// Use OutputText() method to extract text from Output array

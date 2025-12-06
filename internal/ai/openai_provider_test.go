@@ -21,14 +21,14 @@ func TestNewOpenAIProvider_SDKClientInitialization(t *testing.T) {
 			config: &model.AIProviderConfig{
 				Name:   "openai",
 				APIKey: "sk-test",
-				Model:  "gpt-4",
+				Model:  "gpt-4.1-nano",
 			},
 		},
 		{
 			name: "config with empty API key (allowed in constructor)",
 			config: &model.AIProviderConfig{
 				Name:  "openai",
-				Model: "gpt-4",
+				Model: "gpt-4.1-nano",
 			},
 		},
 	}
@@ -56,7 +56,7 @@ func TestOpenAIProvider_GenerateCommitMessage_SDKSuccess(t *testing.T) {
 	config := &model.AIProviderConfig{
 		Name:      "openai",
 		APIKey:    "test-key", // Will fail but tests the SDK structure
-		Model:     "gpt-4",
+		Model:     "gpt-4.1-nano",
 		Timeout:   30 * time.Second,
 		MaxTokens: 500,
 	}
@@ -89,7 +89,7 @@ func TestOpenAIProvider_GenerateCommitMessage_SDKSuccess(t *testing.T) {
 func TestOpenAIProvider_GenerateCommitMessage_SDKErrorMapping(t *testing.T) {
 	config := &model.AIProviderConfig{
 		Name:  "openai",
-		Model: "gpt-4",
+		Model: "gpt-4.1-nano",
 		// APIKey intentionally empty to test error handling
 	}
 
@@ -133,7 +133,7 @@ func TestOpenAIProvider_SDKInitializationFailure(t *testing.T) {
 	config := &model.AIProviderConfig{
 		Name:   "openai",
 		APIKey: "invalid-key-format",
-		Model:  "gpt-4",
+		Model:  "gpt-4.1-nano",
 	}
 
 	provider := NewOpenAIProvider(config)
@@ -172,7 +172,7 @@ func TestOpenAIProvider_ContextCancellation(t *testing.T) {
 	config := &model.AIProviderConfig{
 		Name:    "openai",
 		APIKey:  "test-key",
-		Model:   "gpt-4",
+		Model:   "gpt-4.1-nano",
 		Timeout: 30 * time.Second,
 	}
 
@@ -211,7 +211,7 @@ func TestOpenAIProvider_ValidateConfig(t *testing.T) {
 			config: &model.AIProviderConfig{
 				Name:   "openai",
 				APIKey: "sk-test",
-				Model:  "gpt-4",
+				Model:  "gpt-4.1-nano",
 			},
 			wantErr: false,
 		},
@@ -219,7 +219,7 @@ func TestOpenAIProvider_ValidateConfig(t *testing.T) {
 			name: "missing API key",
 			config: &model.AIProviderConfig{
 				Name:  "openai",
-				Model: "gpt-4",
+				Model: "gpt-4.1-nano",
 			},
 			wantErr: true,
 		},

@@ -6,7 +6,7 @@ ai:
   providers:
     openai:
       api_key: ${OPENAI_API_KEY}  # Use environment variable
-      model: gpt-4                # Optional, default: gpt-4
+      model: gpt-4.1-nano         # Optional, default: gpt-4.1-nano
       timeout: 30s                # Optional, default: 30s
     anthropic:
       api_key: ${ANTHROPIC_API_KEY}  # Use environment variable

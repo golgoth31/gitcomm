@@ -107,12 +107,11 @@ func LoadConfig(configPath string) (*Config, error) {
 	providers := v.GetStringMap("ai.providers")
 	for name := range providers {
 		providerConfig := model.AIProviderConfig{
-			Name:      name,
-			APIKey:    v.GetString(fmt.Sprintf("ai.providers.%s.api_key", name)),
-			Model:     v.GetString(fmt.Sprintf("ai.providers.%s.model", name)),
-			Endpoint:  v.GetString(fmt.Sprintf("ai.providers.%s.endpoint", name)),
-			Timeout:   30 * time.Second,
-			MaxTokens: 500,
+			Name:     name,
+			APIKey:   v.GetString(fmt.Sprintf("ai.providers.%s.api_key", name)),
+			Model:    v.GetString(fmt.Sprintf("ai.providers.%s.model", name)),
+			Endpoint: v.GetString(fmt.Sprintf("ai.providers.%s.endpoint", name)),
+			Timeout:  30 * time.Second,
 		}
 
 		// Override timeout if specified
@@ -120,11 +119,6 @@ func LoadConfig(configPath string) (*Config, error) {
 			if timeout, err := time.ParseDuration(timeoutStr); err == nil {
 				providerConfig.Timeout = timeout
 			}
-		}
-
-		// Override max tokens if specified
-		if maxTokens := v.GetInt(fmt.Sprintf("ai.providers.%s.max_tokens", name)); maxTokens > 0 {
-			providerConfig.MaxTokens = maxTokens
 		}
 
 		config.AI.Providers[name] = providerConfig
