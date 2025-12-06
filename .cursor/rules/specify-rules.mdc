@@ -36,9 +36,9 @@ tests/
 Go 1.25.0+: Follow standard conventions
 
 ## Recent Changes
+- 014-env-var-placeholders: Added Go 1.25.0+
 - 015-ensure-config-exists: Added Go 1.25.0+
 - 005-addall-new-files: Added Go 1.25.0
-- 014-worktree-diff: Added Go 1.25.0+
 
 
 <!-- MANUAL ADDITIONS START -->

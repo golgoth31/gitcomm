@@ -125,6 +125,18 @@ ai:
 
    **Note**: The config file and parent directories (`~/.gitcomm/`) are automatically created if they don't exist. The file is created with restrictive permissions (0600) to protect your API keys.
 
+   **Environment Variable Placeholders**: You can use `${ENV_VAR_NAME}` syntax in your config file to reference environment variables. Placeholders are automatically replaced with environment variable values when the config is loaded. This allows you to keep sensitive information like API keys out of version control while still using a structured config file.
+
+   Example:
+   ```yaml
+   ai:
+     providers:
+       openai:
+         api_key: ${OPENAI_API_KEY}  # Replaced with value from environment
+   ```
+
+   **Important**: If a required environment variable is not set, the application will exit immediately with a clear error message listing all missing variables.
+
 2. Set environment variables:
 
 ```bash

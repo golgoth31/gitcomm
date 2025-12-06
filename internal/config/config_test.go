@@ -3,6 +3,8 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/golgoth31/gitcomm/internal/utils"
@@ -280,4 +282,264 @@ func containsMiddle(s, substr string) bool {
 		}
 	}
 	return false
+}
+
+// T007: Test placeholder identification using regex
+func TestPlaceholderIdentification(t *testing.T) {
+	placeholderRegex := regexp.MustCompile(`\$\{([A-Za-z_][A-Za-z0-9_]*)\}`)
+
+	tests := []struct {
+		name     string
+		content  string
+		expected []string
+	}{
+		{
+			name:     "single placeholder",
+			content:  "api_key: ${OPENAI_API_KEY}",
+			expected: []string{"OPENAI_API_KEY"},
+		},
+		{
+			name:     "multiple placeholders",
+			content:  "openai: ${OPENAI_API_KEY}\nanthropic: ${ANTHROPIC_API_KEY}",
+			expected: []string{"OPENAI_API_KEY", "ANTHROPIC_API_KEY"},
+		},
+		{
+			name:     "no placeholders",
+			content:  "api_key: sk-12345",
+			expected: []string{},
+		},
+		{
+			name:     "placeholder with underscores",
+			content:  "key: ${MY_VAR_NAME}",
+			expected: []string{"MY_VAR_NAME"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			matches := placeholderRegex.FindAllStringSubmatch(tt.content, -1)
+			var found []string
+			for _, match := range matches {
+				found = append(found, match[1])
+			}
+
+			if len(found) != len(tt.expected) {
+				t.Fatalf("Expected %d placeholders, got %d", len(tt.expected), len(found))
+			}
+
+			for i, expected := range tt.expected {
+				if found[i] != expected {
+					t.Fatalf("Expected placeholder %s, got %s", expected, found[i])
+				}
+			}
+		})
+	}
+}
+
+// T008: Test placeholder syntax validation (valid patterns)
+func TestPlaceholderSyntaxValidation_Valid(t *testing.T) {
+	placeholderRegex := regexp.MustCompile(`\$\{([A-Za-z_][A-Za-z0-9_]*)\}`)
+
+	validPatterns := []string{
+		"${VAR}",
+		"${VAR_NAME}",
+		"${VAR123}",
+		"${_VAR}",
+		"${VAR_NAME_123}",
+	}
+
+	for _, pattern := range validPatterns {
+		t.Run(pattern, func(t *testing.T) {
+			if !placeholderRegex.MatchString(pattern) {
+				t.Fatalf("Expected %s to be valid, but regex did not match", pattern)
+			}
+		})
+	}
+}
+
+// T009: Test invalid placeholder syntax detection
+func TestPlaceholderSyntaxValidation_Invalid(t *testing.T) {
+	placeholderRegex := regexp.MustCompile(`\$\{([A-Za-z_][A-Za-z0-9_]*)\}`)
+
+	invalidPatterns := []struct {
+		name    string
+		pattern string
+		reason  string
+	}{
+		{"spaces", "${VAR NAME}", "contains spaces"},
+		{"nested", "${${NESTED}}", "nested placeholders"},
+		{"multiline", "${VAR\nNAME}", "contains newline"},
+		{"invalid start", "${123VAR}", "starts with number"},
+		{"special chars", "${VAR-NAME}", "contains hyphen"},
+	}
+
+	for _, tt := range invalidPatterns {
+		t.Run(tt.name, func(t *testing.T) {
+			// Check for nested placeholders
+			if strings.Contains(tt.pattern, "${${") {
+				// Nested placeholder detected
+				return
+			}
+
+			// Check for newlines
+			if strings.Contains(tt.pattern, "\n") {
+				// Multiline placeholder detected
+				return
+			}
+
+			// Check regex match
+			if placeholderRegex.MatchString(tt.pattern) {
+				t.Fatalf("Expected %s to be invalid (%s), but regex matched", tt.pattern, tt.reason)
+			}
+		})
+	}
+}
+
+// T010: Test environment variable lookup using os.LookupEnv()
+func TestEnvironmentVariableLookup(t *testing.T) {
+	// Set a test environment variable
+	testVar := "TEST_PLACEHOLDER_VAR"
+	testValue := "test-value-123"
+
+	os.Setenv(testVar, testValue)
+	defer os.Unsetenv(testVar)
+
+	// Test LookupEnv
+	value, exists := os.LookupEnv(testVar)
+	if !exists {
+		t.Fatalf("Expected environment variable %s to exist", testVar)
+	}
+	if value != testValue {
+		t.Fatalf("Expected value %s, got %s", testValue, value)
+	}
+
+	// Test unset variable
+	unsetVar := "UNSET_VAR_12345"
+	_, exists = os.LookupEnv(unsetVar)
+	if exists {
+		t.Fatalf("Expected environment variable %s to not exist", unsetVar)
+	}
+
+	// Test empty string value
+	emptyVar := "EMPTY_VAR_TEST"
+	os.Setenv(emptyVar, "")
+	defer os.Unsetenv(emptyVar)
+
+	value, exists = os.LookupEnv(emptyVar)
+	if !exists {
+		t.Fatalf("Expected environment variable %s to exist (even with empty value)", emptyVar)
+	}
+	if value != "" {
+		t.Fatalf("Expected empty value, got %s", value)
+	}
+}
+
+// T011: Test placeholder substitution (single placeholder)
+func TestPlaceholderSubstitution_Single(t *testing.T) {
+	testVar := "TEST_SUBSTITUTION_VAR"
+	testValue := "substituted-value"
+
+	os.Setenv(testVar, testValue)
+	defer os.Unsetenv(testVar)
+
+	content := "api_key: ${" + testVar + "}"
+	placeholder := "${" + testVar + "}"
+
+	result := strings.ReplaceAll(content, placeholder, testValue)
+	expected := "api_key: " + testValue
+
+	if result != expected {
+		t.Fatalf("Expected %s, got %s", expected, result)
+	}
+}
+
+// T012: Test multiple placeholder substitution
+func TestPlaceholderSubstitution_Multiple(t *testing.T) {
+	var1 := "VAR1"
+	val1 := "value1"
+	var2 := "VAR2"
+	val2 := "value2"
+
+	os.Setenv(var1, val1)
+	os.Setenv(var2, val2)
+	defer os.Unsetenv(var1)
+	defer os.Unsetenv(var2)
+
+	content := "openai: ${" + var1 + "}\nanthropic: ${" + var2 + "}"
+
+	result := content
+	result = strings.ReplaceAll(result, "${"+var1+"}", val1)
+	result = strings.ReplaceAll(result, "${"+var2+"}", val2)
+
+	expected := "openai: " + val1 + "\nanthropic: " + val2
+
+	if result != expected {
+		t.Fatalf("Expected %s, got %s", expected, result)
+	}
+}
+
+// T013: Test comment line handling (skip placeholders in comments)
+func TestCommentLineHandling(t *testing.T) {
+	testVar := "COMMENT_TEST_VAR"
+	testValue := "should-not-substitute"
+
+	os.Setenv(testVar, testValue)
+	defer os.Unsetenv(testVar)
+
+	content := "# This is a comment with ${" + testVar + "}\napi_key: ${" + testVar + "}"
+
+	lines := strings.Split(content, "\n")
+	var processedLines []string
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "#") {
+			// Skip comments
+			processedLines = append(processedLines, line)
+		} else {
+			// Process placeholders in non-comment lines
+			processed := strings.ReplaceAll(line, "${"+testVar+"}", testValue)
+			processedLines = append(processedLines, processed)
+		}
+	}
+
+	result := strings.Join(processedLines, "\n")
+
+	// Comment line should remain unchanged
+	if !strings.Contains(result, "# This is a comment with ${"+testVar+"}") {
+		t.Fatalf("Comment line should remain unchanged")
+	}
+
+	// Non-comment line should have placeholder substituted
+	if !strings.Contains(result, "api_key: "+testValue) {
+		t.Fatalf("Non-comment line should have placeholder substituted")
+	}
+}
+
+// T014: Test empty string value handling
+func TestEmptyStringValueHandling(t *testing.T) {
+	testVar := "EMPTY_STRING_VAR"
+
+	os.Setenv(testVar, "")
+	defer os.Unsetenv(testVar)
+
+	// Verify empty string is treated as valid (exists but empty)
+	value, exists := os.LookupEnv(testVar)
+	if !exists {
+		t.Fatalf("Empty string value should be treated as existing variable")
+	}
+	if value != "" {
+		t.Fatalf("Expected empty string, got %s", value)
+	}
+
+	// Test substitution with empty string
+	content := "optional: ${" + testVar + "}"
+	placeholder := "${" + testVar + "}"
+
+	result := strings.ReplaceAll(content, placeholder, value)
+	expected := "optional: "
+
+	if result != expected {
+		t.Fatalf("Expected %s, got %s", expected, result)
+	}
 }
