@@ -10,7 +10,7 @@ require (
 	github.com/go-git/gcfg/v2 v2.0.2
 	github.com/go-git/go-git/v5 v5.16.4
 	github.com/hiddeco/sshsig v0.2.0
-	github.com/openai/openai-go/v3 v3.10.0
+	github.com/openai/openai-go/v3 v3.15.0
 	github.com/rs/zerolog v1.34.0
 	github.com/sergi/go-diff v1.4.0
 	github.com/spf13/cobra v1.10.2
