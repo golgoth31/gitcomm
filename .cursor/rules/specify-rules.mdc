@@ -17,6 +17,8 @@ Auto-generated from all feature plans. Last updated: 2025-11-29
 - N/A (in-memory diff computation, no persistence) (014-worktree-diff)
 - N/A (in-memory state processing) (005-addall-new-files)
 - File system (YAML config file at `~/.gitcomm/config.yaml` or custom path) (015-ensure-config-exists)
+- Go 1.25.0 + github.com/charmbracelet/huh v0.8.0 (existing) (016-unify-prompt-defaults)
+- N/A (no storage changes) (016-unify-prompt-defaults)
 
 - Go 1.25.0+ (001-git-commit-cli)
 
@@ -36,9 +38,9 @@ tests/
 Go 1.25.0+: Follow standard conventions
 
 ## Recent Changes
+- 016-unify-prompt-defaults: Added Go 1.25.0 + github.com/charmbracelet/huh v0.8.0 (existing)
 - 014-env-var-placeholders: Added Go 1.25.0+
 - 015-ensure-config-exists: Added Go 1.25.0+
-- 005-addall-new-files: Added Go 1.25.0
 
 
 <!-- MANUAL ADDITIONS START -->
