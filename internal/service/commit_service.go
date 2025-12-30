@@ -326,49 +326,44 @@ func (s *CommitService) promptCommitMessage(prefilled *ui.PrefilledCommitMessage
 	message := &model.CommitMessage{}
 
 	// Prompt for type
-	var commitType string
-	var err error
+	defaultType := ""
 	if prefilled != nil && prefilled.Type != "" {
-		commitType, err = ui.PromptCommitTypeWithPreselection(s.reader, prefilled.Type)
-	} else {
-		commitType, err = ui.PromptCommitType(s.reader)
+		defaultType = prefilled.Type
 	}
+	commitType, err := ui.PromptCommitTypeWithPreselection(s.reader, defaultType)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prompt for type: %w", err)
 	}
 	message.Type = commitType
 
 	// Prompt for scope
-	var scope string
+	defaultScope := ""
 	if prefilled != nil {
-		scope, err = ui.PromptScopeWithDefault(s.reader, prefilled.Scope)
-	} else {
-		scope, err = ui.PromptScope(s.reader)
+		defaultScope = prefilled.Scope
 	}
+	scope, err := ui.PromptScopeWithDefault(s.reader, defaultScope)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prompt for scope: %w", err)
 	}
 	message.Scope = scope
 
 	// Prompt for subject (required, with validation)
-	var subject string
+	defaultSubject := ""
 	if prefilled != nil && prefilled.Subject != "" {
-		subject, err = ui.PromptSubjectWithDefault(s.reader, prefilled.Subject)
-	} else {
-		subject, err = ui.PromptSubject(s.reader)
+		defaultSubject = prefilled.Subject
 	}
+	subject, err := ui.PromptSubjectWithDefault(s.reader, defaultSubject)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prompt for subject: %w", err)
 	}
 	message.Subject = subject
 
 	// Prompt for body
-	var body string
+	defaultBody := ""
 	if prefilled != nil {
-		body, err = ui.PromptBodyWithDefault(s.reader, prefilled.Body)
-	} else {
-		body, err = ui.PromptBody(s.reader)
+		defaultBody = prefilled.Body
 	}
+	body, err := ui.PromptBodyWithDefault(s.reader, defaultBody)
 	if err != nil {
 		// Body is optional, so we can continue if user cancels
 		utils.Logger.Debug().Err(err).Msg("Body input cancelled or failed")
@@ -378,12 +373,11 @@ func (s *CommitService) promptCommitMessage(prefilled *ui.PrefilledCommitMessage
 	}
 
 	// Prompt for footer
-	var footer string
+	defaultFooter := ""
 	if prefilled != nil {
-		footer, err = ui.PromptFooterWithDefault(s.reader, prefilled.Footer)
-	} else {
-		footer, err = ui.PromptFooter(s.reader)
+		defaultFooter = prefilled.Footer
 	}
+	footer, err := ui.PromptFooterWithDefault(s.reader, defaultFooter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prompt for footer: %w", err)
 	}

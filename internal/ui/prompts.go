@@ -44,28 +44,6 @@ type PrefilledCommitMessage struct {
 	Footer  string // Pre-filled footer from AI message (may be empty)
 }
 
-// PromptScope prompts the user for commit scope (optional)
-func PromptScope(reader *bufio.Reader) (string, error) {
-	var scope string
-
-	form := huh.NewForm(
-		huh.NewGroup(
-			huh.NewInput().
-				Title("Scope (optional, press Enter to skip)").
-				Value(&scope),
-		),
-	)
-
-	if err := form.Run(); err != nil {
-		return "", fmt.Errorf("scope input cancelled: %w", err)
-	}
-
-	// Print post-validation summary line
-	printPostValidationSummary("Scope (optional)", scope)
-
-	return scope, nil
-}
-
 // PromptScopeWithDefault prompts the user for commit scope with a default value
 func PromptScopeWithDefault(reader *bufio.Reader, defaultValue string) (string, error) {
 	scope := defaultValue
@@ -91,38 +69,6 @@ func PromptScopeWithDefault(reader *bufio.Reader, defaultValue string) (string, 
 	printPostValidationSummary("Scope", scope)
 
 	return scope, nil
-}
-
-// PromptSubject prompts the user for commit subject (required)
-func PromptSubject(reader *bufio.Reader) (string, error) {
-	var subject string
-
-	validator := func(value string) error {
-		if strings.TrimSpace(value) == "" {
-			return fmt.Errorf("subject cannot be empty")
-		}
-		return nil
-	}
-
-	form := huh.NewForm(
-		huh.NewGroup(
-			huh.NewInput().
-				Title("Subject (required)").
-				Value(&subject).
-				Validate(validator),
-		),
-	)
-
-	if err := form.Run(); err != nil {
-		return "", fmt.Errorf("subject input cancelled: %w", err)
-	}
-
-	subject = strings.TrimSpace(subject)
-
-	// Print post-validation summary line
-	printPostValidationSummary("Subject (required)", subject)
-
-	return subject, nil
 }
 
 // PromptSubjectWithDefault prompts the user for commit subject with a default value
@@ -162,37 +108,6 @@ func PromptSubjectWithDefault(reader *bufio.Reader, defaultValue string) (string
 	return subject, nil
 }
 
-// PromptBody prompts the user for commit body (optional) using multiline input
-func PromptBody(reader *bufio.Reader) (string, error) {
-	var body string
-
-	form := huh.NewForm(
-		huh.NewGroup(
-			huh.NewText().
-				Title("Body").
-				Value(&body),
-		),
-	)
-
-	if err := form.Run(); err != nil {
-		return "", fmt.Errorf("body input cancelled: %w", err)
-	}
-
-	// Warn if body is too long (optional validation)
-	if len(body) > 320 {
-		fmt.Printf("Warning: Body is %d characters (recommended: ≤320). Continue? (y/n): ", len(body))
-		confirm, _ := reader.ReadString('\n')
-		if strings.TrimSpace(strings.ToLower(confirm)) != "y" {
-			return "", fmt.Errorf("body too long, user cancelled")
-		}
-	}
-
-	// Print post-validation summary line (truncated for multiline)
-	printPostValidationSummary("Body", body)
-
-	return body, nil
-}
-
 // PromptBodyWithDefault prompts the user for commit body with a default value pre-populated
 func PromptBodyWithDefault(reader *bufio.Reader, defaultValue string) (string, error) {
 	body := defaultValue
@@ -222,28 +137,6 @@ func PromptBodyWithDefault(reader *bufio.Reader, defaultValue string) (string, e
 	printPostValidationSummary("Body", body)
 
 	return body, nil
-}
-
-// PromptFooter prompts the user for commit footer (optional) using multiline input
-func PromptFooter(reader *bufio.Reader) (string, error) {
-	var footer string
-
-	form := huh.NewForm(
-		huh.NewGroup(
-			huh.NewText().
-				Title("Footer").
-				Value(&footer),
-		),
-	)
-
-	if err := form.Run(); err != nil {
-		return "", fmt.Errorf("footer input cancelled: %w", err)
-	}
-
-	// Print post-validation summary line (truncated for multiline)
-	printPostValidationSummary("Footer", footer)
-
-	return footer, nil
 }
 
 // PromptFooterWithDefault prompts the user for commit footer with a default value pre-populated
@@ -308,38 +201,6 @@ func PromptConfirm(reader *bufio.Reader, message string, defaultValue bool) (boo
 	printPostValidationSummary(message, defaultValue)
 
 	return defaultValue, nil
-}
-
-// PromptCommitType prompts the user for commit type using an interactive select list
-func PromptCommitType(reader *bufio.Reader) (string, error) {
-	var commitType string
-
-	form := huh.NewForm(
-		huh.NewGroup(
-			huh.NewSelect[string]().
-				Title("Choose a type").
-				Options(
-					huh.NewOption("feat", "feat"),
-					huh.NewOption("fix", "fix"),
-					huh.NewOption("docs", "docs"),
-					huh.NewOption("style", "style"),
-					huh.NewOption("refactor", "refactor"),
-					huh.NewOption("test", "test"),
-					huh.NewOption("chore", "chore"),
-					huh.NewOption("version", "version"),
-				).
-				Value(&commitType),
-		),
-	)
-
-	if err := form.Run(); err != nil {
-		return "", fmt.Errorf("commit type selection cancelled: %w", err)
-	}
-
-	// Print post-validation summary line
-	printPostValidationSummary("Choose a type", commitType)
-
-	return commitType, nil
 }
 
 // PromptCommitTypeWithPreselection prompts the user for commit type with a pre-selected type
@@ -413,18 +274,18 @@ func PromptAIUsage(reader *bufio.Reader, tokenCount int) (bool, error) {
 
 // PromptAIMessageAcceptance prompts the user to accept or reject AI-generated message
 // Deprecated: Use PromptAIMessageAcceptanceOptions instead
-func PromptAIMessageAcceptance(reader *bufio.Reader, message string) (bool, error) {
-	fmt.Println("\n--- AI Generated Message ---")
-	fmt.Println(message)
-	fmt.Println("---")
-	fmt.Print("Accept this message and commit? (Y/n): ")
-	input, err := reader.ReadString('\n')
-	if err != nil {
-		return false, fmt.Errorf("failed to read input: %w", err)
-	}
-	response := strings.TrimSpace(strings.ToLower(input))
-	return response == "" || response == "y" || response == "yes", nil
-}
+// func PromptAIMessageAcceptance(reader *bufio.Reader, message string) (bool, error) {
+// 	fmt.Println("\n--- AI Generated Message ---")
+// 	fmt.Println(message)
+// 	fmt.Println("---")
+// 	fmt.Print("Accept this message and commit? (Y/n): ")
+// 	input, err := reader.ReadString('\n')
+// 	if err != nil {
+// 		return false, fmt.Errorf("failed to read input: %w", err)
+// 	}
+// 	response := strings.TrimSpace(strings.ToLower(input))
+// 	return response == "" || response == "y" || response == "yes", nil
+// }
 
 // PromptAIMessageAcceptanceOptions prompts the user to choose from three options when presented with an AI-generated commit message
 func PromptAIMessageAcceptanceOptions(reader *bufio.Reader, message string) (AIMessageAcceptance, error) {
