@@ -25,6 +25,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Debug logging when file is created (only when file is actually created, not when it already exists)
 
 ### Changed
+- **Replace Go-Git Library with External Git CLI**: Migrated all git operations from `go-git` library to external `git` CLI commands via `os/exec`
+  - All repository operations (`GetRepositoryState`, `CreateCommit`, `StageAllFiles`, `CaptureStagingState`, `StageModifiedFiles`, `StageAllFilesIncludingUntracked`, `UnstageFiles`) now use external `git` commands
+  - Git version >= 2.34.0 enforced at initialization (required for SSH commit signing support)
+  - SSH commit signing delegated to git CLI (supports ssh-agent and SSH_ASKPASS for passphrase-protected keys)
+  - Categorized error handling: `ErrGitNotFound`, `ErrGitVersionTooOld`, `ErrGitPermissionDenied`, `ErrGitSigningFailed`, `ErrGitFileNotFound`, `ErrGitCommandFailed`
+  - All git command executions logged with command, arguments, exit code, and duration (FR-018)
+  - Removed dependencies: `go-git/go-git/v5`, `hiddeco/sshsig`, `sergi/go-diff`, `golang.org/x/crypto`
+  - Retained dependency: `go-git/gcfg/v2` (git config INI parsing)
+  - `GitRepository` interface unchanged -- fully backward compatible
 - **CLI Prompts Migration to Huh Library**: All CLI prompts have been migrated from custom Bubble Tea implementations to the `huh` library
   - All prompts now use `huh` library (`github.com/charmbracelet/huh`) for consistent, modern UI
   - Prompts render inline (no alt screen mode) - terminal history remains visible throughout interactions
