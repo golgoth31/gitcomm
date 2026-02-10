@@ -569,7 +569,7 @@ func TestGetRepositoryState_DiffMatchesGitDiffCached(t *testing.T) {
 	if !strings.Contains(actualDiff, "diff --git") {
 		t.Error("Expected diff to contain 'diff --git' header")
 	}
-	if !strings.Contains(actualDiff, testFile) {
+	if !strings.Contains(actualDiff, "test.txt") {
 		t.Error("Expected diff to contain file path")
 	}
 	// Check for change markers (though exact format may vary)

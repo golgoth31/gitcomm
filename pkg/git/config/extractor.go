@@ -18,12 +18,12 @@ type GitConfig struct {
 	CommitGPGSign bool
 }
 
-// CommitSigner represents the configured commit signer extracted from git config and prepared for use with go-git
+// CommitSigner represents the configured commit signer extracted from git config
 type CommitSigner struct {
-	PrivateKeyPath string
-	PublicKeyPath  string
-	Format         string
-	Signer         interface{} // Will be git.Signer (e.g., *ssh.PublicKeys from go-git)
+	PrivateKeyPath string // Path to private key (for env var setup)
+	PublicKeyPath  string // Path to public key (user.signingkey)
+	Format         string // Signing format ("ssh", "gpg")
+	Enabled        bool   // Whether signing is enabled
 }
 
 // ConfigExtractor defines the interface for extracting git configuration
