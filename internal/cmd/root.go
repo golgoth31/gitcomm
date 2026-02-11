@@ -78,7 +78,7 @@ func runCommand(cmd *cobra.Command, args []string) {
 	// Initialize git repository early (needed for restoration)
 	gitRepo, err := repository.NewGitRepository("", noSign)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: failed to initialize git repository: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error: failed to initialize git repository: %s\n", repository.FormatErrorForDisplay(err))
 		os.Exit(1)
 	}
 
@@ -155,7 +155,7 @@ func runCommand(cmd *cobra.Command, args []string) {
 			fmt.Println("No changes to commit.")
 			return
 		}
-		fmt.Fprintf(os.Stderr, "Error: commit failed: %v\n", commitErr)
+		fmt.Fprintf(os.Stderr, "Error: commit failed: %s\n", repository.FormatErrorForDisplay(commitErr))
 		os.Exit(1)
 	}
 }

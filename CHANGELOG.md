@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Explicit Commit Error Messages**: Git operation failures now display explicit error details instead of generic messages
+  - `ErrGitCommandFailed` now shows git stderr when available, or a generic hint when stderr is empty
+  - New `FormatErrorForDisplay` formatter: truncates stderr at 1500 chars with "… (N additional characters)" suffix
+  - Format: `git [command] failed (exit [code]). Details: [stderr or hint]`
+  - Applied at: repository init failure (root.go), commit workflow failure (root.go), AcceptAndCommit retry (commit_service.go)
 - **Environment Variable Placeholder Substitution**: Config files can now contain placeholders in the form `${ENV_VAR_NAME}` which are automatically replaced with values from environment variables during config loading
   - Placeholders are processed before YAML parsing, ensuring clean config structure
   - Invalid placeholder syntax (spaces, nested placeholders, multiline) causes immediate exit with clear error messages

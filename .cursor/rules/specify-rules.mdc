@@ -20,6 +20,7 @@ Auto-generated from all feature plans. Last updated: 2025-11-29
 - Go 1.25.0 + github.com/charmbracelet/huh v0.8.0 (existing) (016-unify-prompt-defaults)
 - N/A (no storage changes) (016-unify-prompt-defaults)
 - N/A (filesystem-based git operations) (016-replace-gogit)
+- Go 1.25.0 + zerolog (logging), cobra (CLI), gcfg (git config) (017-explicit-commit-errors)
 
 - Go 1.25.0+ (001-git-commit-cli)
 
@@ -39,25 +40,16 @@ tests/
 Go 1.25.0+: Follow standard conventions
 
 ## Recent Changes
+- 017-explicit-commit-errors: Added Go 1.25.0 + zerolog (logging), cobra (CLI), gcfg (git config)
 <<<<<<< HEAD
 - 016-unify-prompt-defaults: Added Go 1.25.0 + github.com/charmbracelet/huh v0.8.0 (existing)
 - 014-env-var-placeholders: Added Go 1.25.0+
-- 015-ensure-config-exists: Added Go 1.25.0+
 =======
 <<<<<<< HEAD
 <<<<<<< HEAD
-- 016-unify-prompt-defaults: Added Go 1.25.0 + github.com/charmbracelet/huh v0.8.0 (existing)
-- 014-env-var-placeholders: Added Go 1.25.0+
-- 015-ensure-config-exists: Added Go 1.25.0+
 =======
-- 015-ensure-config-exists: Added Go 1.25.0+
-- 005-addall-new-files: Added Go 1.25.0
-- 014-worktree-diff: Added Go 1.25.0+
 >>>>>>> 5fc7836 (feat: config file)
 =======
-- 016-replace-gogit: Added Go 1.25.0
-- 015-ensure-config-exists: Added Go 1.25.0+
-- 005-addall-new-files: Added Go 1.25.0
 >>>>>>> 04fc733 (feat(git): replace go-git with external git-cli commands)
 >>>>>>> be79ce2 (feat(git): replace go-git with external git-cli commands)
 

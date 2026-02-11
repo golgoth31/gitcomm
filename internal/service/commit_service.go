@@ -553,7 +553,7 @@ func (s *CommitService) generateWithAIWithRetry(ctx context.Context, repoState *
 // handleCommitFailure handles commit failure after AcceptAndCommit by prompting user for retry/edit/cancel
 func (s *CommitService) handleCommitFailure(ctx context.Context, message *model.CommitMessage, commitErr error) (*model.CommitMessage, error) {
 	// Display error message
-	fmt.Printf("\nError creating commit: %v\n", commitErr)
+	fmt.Printf("\nError creating commit: %s\n", repository.FormatErrorForDisplay(commitErr))
 
 	// Prompt for retry/edit/cancel
 	choice, err := ui.PromptCommitFailureChoice(s.reader)

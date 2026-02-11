@@ -3,6 +3,7 @@ package repository
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
 // Git CLI error types for categorized error handling (FR-006)
@@ -34,5 +35,9 @@ type ErrGitCommandFailed struct {
 
 // Error implements the error interface
 func (e *ErrGitCommandFailed) Error() string {
-	return fmt.Sprintf("git %s failed (exit %d): %s", e.Command, e.ExitCode, e.Stderr)
+	detail := strings.TrimSpace(e.Stderr)
+	if detail == "" {
+		detail = "No additional details from git. Check repository state or run the command manually."
+	}
+	return fmt.Sprintf("git %s failed (exit %d): %s", e.Command, e.ExitCode, detail)
 }
