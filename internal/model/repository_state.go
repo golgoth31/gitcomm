@@ -7,6 +7,10 @@ type RepositoryState struct {
 
 	// UnstagedFiles is the list of unstaged file changes
 	UnstagedFiles []FileChange
+
+	// RawDiff is the condensed diff output from rtk (when rtk is active).
+	// When non-empty, this replaces per-file FileChange.Diff for AI prompt generation.
+	RawDiff string
 }
 
 // FileChange represents a single file change in the repository

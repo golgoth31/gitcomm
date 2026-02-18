@@ -101,7 +101,7 @@ func TestRestorationTimeoutScenario(t *testing.T) {
 	}
 
 	// Create repository instance
-	repo, err := repository.NewGitRepository(tmpDir, false)
+	repo, err := repository.NewGitRepository(tmpDir, false, false)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}

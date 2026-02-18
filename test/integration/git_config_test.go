@@ -40,7 +40,7 @@ func TestCommitAuthor_FromLocalConfig(t *testing.T) {
 	}
 
 	// Create repository
-	repo, err := repository.NewGitRepository(tmpDir, false)
+	repo, err := repository.NewGitRepository(tmpDir, false, false)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -112,7 +112,7 @@ func TestCommitAuthor_FromGlobalConfig(t *testing.T) {
 	}
 
 	// Create repository
-	repo, err := repository.NewGitRepository(tmpDir, false)
+	repo, err := repository.NewGitRepository(tmpDir, false, false)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -195,7 +195,7 @@ func TestCommitAuthor_LocalTakesPrecedence(t *testing.T) {
 	}
 
 	// Create repository
-	repo, err := repository.NewGitRepository(tmpDir, false)
+	repo, err := repository.NewGitRepository(tmpDir, false, false)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -260,7 +260,7 @@ func TestCommitAuthor_DefaultsWhenConfigMissing(t *testing.T) {
 	os.Setenv("HOME", homeDir)
 
 	// Create repository
-	repo, err := repository.NewGitRepository(tmpDir, false)
+	repo, err := repository.NewGitRepository(tmpDir, false, false)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}

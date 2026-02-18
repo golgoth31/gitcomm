@@ -28,4 +28,7 @@ type GitRepository interface {
 
 	// UnstageFiles unstages the specified files, restoring them to their pre-staged state
 	UnstageFiles(ctx context.Context, files []string) error
+
+	// UsesRTK returns true if git commands are being proxied through rtk
+	UsesRTK() bool
 }

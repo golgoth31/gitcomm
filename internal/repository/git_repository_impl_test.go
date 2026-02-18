@@ -37,7 +37,7 @@ func TestNewGitRepository_ExtractsConfigBeforeOpening(t *testing.T) {
 	}
 
 	// Create repository - should extract config before opening
-	repo, err := NewGitRepository(tmpDir, false)
+	repo, err := NewGitRepository(tmpDir, false, false)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -87,7 +87,7 @@ func TestCreateCommit_UsesExtractedConfigForAuthor(t *testing.T) {
 	}
 
 	// Create repository
-	repo, err := NewGitRepository(tmpDir, false)
+	repo, err := NewGitRepository(tmpDir, false, false)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -155,7 +155,7 @@ func TestCreateCommit_UsesDefaultsWhenConfigMissing(t *testing.T) {
 	os.Setenv("HOME", filepath.Join(t.TempDir(), "nonexistent"))
 
 	// Create repository
-	repo, err := NewGitRepository(tmpDir, false)
+	repo, err := NewGitRepository(tmpDir, false, false)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -234,8 +234,8 @@ func TestGetRepositoryState_PopulatesDiffForStagedFiles(t *testing.T) {
 		t.Fatalf("Failed to stage modified file: %v", err)
 	}
 
-	// Get repository state
-	repo, err := NewGitRepository(tmpDir, false)
+	// Get repository state (noRTK=true: this test verifies per-file Diff parsing)
+	repo, err := NewGitRepository(tmpDir, false, true)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -245,7 +245,7 @@ func TestGetRepositoryState_PopulatesDiffForStagedFiles(t *testing.T) {
 		t.Fatalf("Failed to get repository state: %v", err)
 	}
 
-	// Verify staged file has diff populated
+	// Verify diff is populated
 	if len(state.StagedFiles) != 1 {
 		t.Fatalf("Expected 1 staged file, got %d", len(state.StagedFiles))
 	}
@@ -290,7 +290,7 @@ func TestGetRepositoryState_LeavesDiffEmptyForUnstagedFiles(t *testing.T) {
 	}
 
 	// Get repository state
-	repo, err := NewGitRepository(tmpDir, false)
+	repo, err := NewGitRepository(tmpDir, false, false)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -351,8 +351,8 @@ func TestGetRepositoryState_DiffComputationAccuracy(t *testing.T) {
 		t.Fatalf("Failed to stage modified file: %v", err)
 	}
 
-	// Get repository state
-	repo, err := NewGitRepository(tmpDir, false)
+	// Get repository state (noRTK=true: this test verifies per-file Diff parsing)
+	repo, err := NewGitRepository(tmpDir, false, true)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -420,8 +420,8 @@ func TestGetRepositoryState_LargeDiffShowsMetadataOnly(t *testing.T) {
 		t.Fatalf("Failed to stage large file: %v", err)
 	}
 
-	// Get repository state
-	repo, err := NewGitRepository(tmpDir, false)
+	// Get repository state (noRTK=true: this test verifies per-file Diff size limiting)
+	repo, err := NewGitRepository(tmpDir, false, true)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -474,8 +474,8 @@ func TestGetRepositoryState_LargeNewFileShowsMetadataOnly(t *testing.T) {
 		t.Fatalf("Failed to stage large file: %v", err)
 	}
 
-	// Get repository state
-	repo, err := NewGitRepository(tmpDir, false)
+	// Get repository state (noRTK=true: this test verifies per-file Diff size limiting)
+	repo, err := NewGitRepository(tmpDir, false, true)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -548,7 +548,7 @@ func TestGetRepositoryState_HandlesFileReadErrors(t *testing.T) {
 	}
 
 	// Get repository state - should handle error gracefully
-	repo, err := NewGitRepository(tmpDir, false)
+	repo, err := NewGitRepository(tmpDir, false, false)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -597,7 +597,7 @@ func TestGetRepositoryState_HandlesDiffComputationFailures(t *testing.T) {
 	}
 
 	// Get repository state
-	repo, err := NewGitRepository(tmpDir, false)
+	repo, err := NewGitRepository(tmpDir, false, false)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -694,7 +694,7 @@ func TestGetRepositoryState_HandlesUnmergedFiles(t *testing.T) {
 	cmd.Run() // Ignore error - merge will fail with conflict
 
 	// Get repository state - should handle unmerged files gracefully
-	repo, err := NewGitRepository(tmpDir, false)
+	repo, err := NewGitRepository(tmpDir, false, false)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -754,7 +754,7 @@ func TestGetRepositoryState_ExcludesNewFilesWhenAddAllFalse(t *testing.T) {
 	}
 
 	// Get repository state with includeNewFiles = false
-	repo, err := NewGitRepository(tmpDir, false)
+	repo, err := NewGitRepository(tmpDir, false, false)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -819,7 +819,7 @@ func TestGetRepositoryState_IncludesModifiedFilesWhenAddAllFalse(t *testing.T) {
 	}
 
 	// Get repository state with includeNewFiles = false
-	repo, err := NewGitRepository(tmpDir, false)
+	repo, err := NewGitRepository(tmpDir, false, false)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -884,7 +884,7 @@ func TestGetRepositoryState_IncludesDeletedFilesWhenAddAllFalse(t *testing.T) {
 	}
 
 	// Get repository state with includeNewFiles = false
-	repo, err := NewGitRepository(tmpDir, false)
+	repo, err := NewGitRepository(tmpDir, false, false)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -950,7 +950,7 @@ func TestGetRepositoryState_IncludesRenamedFilesWhenAddAllFalse(t *testing.T) {
 	}
 
 	// Get repository state with includeNewFiles = false
-	repo, err := NewGitRepository(tmpDir, false)
+	repo, err := NewGitRepository(tmpDir, false, false)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -1014,7 +1014,7 @@ func TestGetRepositoryState_ExcludesManuallyStagedNewFiles(t *testing.T) {
 	}
 
 	// Get repository state with includeNewFiles = false
-	repo, err := NewGitRepository(tmpDir, false)
+	repo, err := NewGitRepository(tmpDir, false, false)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -1065,7 +1065,7 @@ func TestGetRepositoryState_ExcludesBinaryNewFiles(t *testing.T) {
 	}
 
 	// Get repository state with includeNewFiles = false
-	repo, err := NewGitRepository(tmpDir, false)
+	repo, err := NewGitRepository(tmpDir, false, false)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -1115,7 +1115,7 @@ func TestGetRepositoryState_IncludesNewFilesWhenAddAllTrue(t *testing.T) {
 	}
 
 	// Get repository state with includeNewFiles = true
-	repo, err := NewGitRepository(tmpDir, false)
+	repo, err := NewGitRepository(tmpDir, false, false)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -1140,8 +1140,8 @@ func TestGetRepositoryState_IncludesNewFilesWhenAddAllTrue(t *testing.T) {
 	}
 }
 
-// TestResolveCommand_WithRTK verifies that when rtk is enabled, commands are proxied through rtk.
-func TestResolveCommand_WithRTK(t *testing.T) {
+// TestUsesRTK_WithRTKEnabled verifies that UsesRTK returns true when rtk is configured.
+func TestUsesRTK_WithRTKEnabled(t *testing.T) {
 	t.Parallel()
 
 	repo := &gitRepositoryImpl{
@@ -1150,53 +1150,13 @@ func TestResolveCommand_WithRTK(t *testing.T) {
 		useRTK: true,
 	}
 
-	tests := []struct {
-		name         string
-		args         []string
-		expectedBin  string
-		expectedArgs []string
-	}{
-		{
-			name:         "status command",
-			args:         []string{"-C", "/repo", "status", "--porcelain=v1"},
-			expectedBin:  "/usr/local/bin/rtk",
-			expectedArgs: []string{"git", "--", "-C", "/repo", "status", "--porcelain=v1"},
-		},
-		{
-			name:         "diff command",
-			args:         []string{"-C", "/repo", "diff", "--cached", "--unified=0"},
-			expectedBin:  "/usr/local/bin/rtk",
-			expectedArgs: []string{"git", "--", "-C", "/repo", "diff", "--cached", "--unified=0"},
-		},
-		{
-			name:         "commit command",
-			args:         []string{"-C", "/repo", "commit", "-m", "test"},
-			expectedBin:  "/usr/local/bin/rtk",
-			expectedArgs: []string{"git", "--", "-C", "/repo", "commit", "-m", "test"},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			bin, args := repo.resolveCommand(tt.args)
-			if bin != tt.expectedBin {
-				t.Errorf("Expected bin %q, got %q", tt.expectedBin, bin)
-			}
-			if len(args) != len(tt.expectedArgs) {
-				t.Fatalf("Expected %d args, got %d: %v", len(tt.expectedArgs), len(args), args)
-			}
-			for i, arg := range args {
-				if arg != tt.expectedArgs[i] {
-					t.Errorf("Arg[%d]: expected %q, got %q", i, tt.expectedArgs[i], arg)
-				}
-			}
-		})
+	if !repo.UsesRTK() {
+		t.Error("Expected UsesRTK() to return true when rtk is enabled")
 	}
 }
 
-// TestResolveCommand_WithoutRTK verifies that when rtk is not available, commands use git directly.
-func TestResolveCommand_WithoutRTK(t *testing.T) {
+// TestUsesRTK_WithoutRTK verifies that UsesRTK returns false when rtk is not available.
+func TestUsesRTK_WithoutRTK(t *testing.T) {
 	t.Parallel()
 
 	repo := &gitRepositoryImpl{
@@ -1205,42 +1165,43 @@ func TestResolveCommand_WithoutRTK(t *testing.T) {
 		useRTK: false,
 	}
 
-	tests := []struct {
-		name         string
-		args         []string
-		expectedBin  string
-		expectedArgs []string
-	}{
-		{
-			name:         "status command",
-			args:         []string{"-C", "/repo", "status", "--porcelain=v1"},
-			expectedBin:  "/usr/bin/git",
-			expectedArgs: []string{"-C", "/repo", "status", "--porcelain=v1"},
-		},
-		{
-			name:         "diff command",
-			args:         []string{"-C", "/repo", "diff", "--cached"},
-			expectedBin:  "/usr/bin/git",
-			expectedArgs: []string{"-C", "/repo", "diff", "--cached"},
-		},
+	if repo.UsesRTK() {
+		t.Error("Expected UsesRTK() to return false when rtk is not available")
+	}
+}
+
+// TestNewGitRepository_NoRTKFlag verifies that noRTK=true disables rtk even if rtk binary is on PATH.
+func TestNewGitRepository_NoRTKFlag(t *testing.T) {
+	utils.InitLogger(true)
+
+	tmpDir := t.TempDir()
+
+	// Initialize git repository
+	cmd := exec.Command("git", "init", tmpDir)
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Failed to initialize git repository: %v", err)
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			bin, args := repo.resolveCommand(tt.args)
-			if bin != tt.expectedBin {
-				t.Errorf("Expected bin %q, got %q", tt.expectedBin, bin)
-			}
-			if len(args) != len(tt.expectedArgs) {
-				t.Fatalf("Expected %d args, got %d: %v", len(tt.expectedArgs), len(args), args)
-			}
-			for i, arg := range args {
-				if arg != tt.expectedArgs[i] {
-					t.Errorf("Arg[%d]: expected %q, got %q", i, tt.expectedArgs[i], arg)
-				}
-			}
-		})
+	// Create initial commit so git commands work
+	cmd = exec.Command("git", "-C", tmpDir, "commit", "--allow-empty", "-m", "initial")
+	cmd.Env = append(os.Environ(),
+		"GIT_AUTHOR_NAME=Test",
+		"GIT_AUTHOR_EMAIL=test@test.com",
+		"GIT_COMMITTER_NAME=Test",
+		"GIT_COMMITTER_EMAIL=test@test.com",
+	)
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Failed to create initial commit: %v", err)
+	}
+
+	// Create repository with noRTK=true — should never use rtk
+	repo, err := NewGitRepository(tmpDir, false, true)
+	if err != nil {
+		t.Fatalf("Failed to create repository: %v", err)
+	}
+
+	if repo.UsesRTK() {
+		t.Error("Expected UsesRTK() to return false when noRTK is true")
 	}
 }
 
@@ -1269,7 +1230,7 @@ func TestGetRepositoryState_DefaultBehaviorIncludesAll(t *testing.T) {
 	}
 
 	// Get repository state without context value (default behavior)
-	repo, err := NewGitRepository(tmpDir, false)
+	repo, err := NewGitRepository(tmpDir, false, false)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}

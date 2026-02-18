@@ -65,7 +65,7 @@ func TestSignalInterruptDuringStaging(t *testing.T) {
 	}
 
 	// Test staging state capture and restoration
-	repo, err := repository.NewGitRepository(tmpDir, false)
+	repo, err := repository.NewGitRepository(tmpDir, false, false)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}

@@ -58,7 +58,7 @@ func TestGetRepositoryState_WithStagedModifiedFile(t *testing.T) {
 	}
 
 	// Get repository state
-	repo, err := repository.NewGitRepository(tmpDir, false)
+	repo, err := repository.NewGitRepository(tmpDir, false, true)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -120,7 +120,7 @@ func TestGetRepositoryState_WithStagedAddedFile(t *testing.T) {
 	}
 
 	// Get repository state
-	repo, err := repository.NewGitRepository(tmpDir, false)
+	repo, err := repository.NewGitRepository(tmpDir, false, true)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -193,7 +193,7 @@ func TestGetRepositoryState_WithStagedDeletedFile(t *testing.T) {
 	}
 
 	// Get repository state
-	repo, err := repository.NewGitRepository(tmpDir, false)
+	repo, err := repository.NewGitRepository(tmpDir, false, true)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -267,7 +267,7 @@ func TestGetRepositoryState_WithStagedRenamedFile(t *testing.T) {
 	}
 
 	// Get repository state
-	repo, err := repository.NewGitRepository(tmpDir, false)
+	repo, err := repository.NewGitRepository(tmpDir, false, true)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -349,7 +349,7 @@ func TestGetRepositoryState_WithStagedCopiedFile(t *testing.T) {
 	}
 
 	// Get repository state
-	repo, err := repository.NewGitRepository(tmpDir, false)
+	repo, err := repository.NewGitRepository(tmpDir, false, true)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -422,7 +422,7 @@ func TestGetRepositoryState_WithNoStagedChanges(t *testing.T) {
 	}
 
 	// Get repository state (no staged changes)
-	repo, err := repository.NewGitRepository(tmpDir, false)
+	repo, err := repository.NewGitRepository(tmpDir, false, true)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -476,7 +476,7 @@ func TestGetRepositoryState_WithUnstagedFiles(t *testing.T) {
 	}
 
 	// Get repository state
-	repo, err := repository.NewGitRepository(tmpDir, false)
+	repo, err := repository.NewGitRepository(tmpDir, false, true)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -544,7 +544,7 @@ func TestGetRepositoryState_DiffMatchesGitDiffCached(t *testing.T) {
 	}
 
 	// Get repository state
-	repo, err := repository.NewGitRepository(tmpDir, false)
+	repo, err := repository.NewGitRepository(tmpDir, false, true)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -628,7 +628,7 @@ func TestGetRepositoryState_MultipleFilesComputedIndependently(t *testing.T) {
 	}
 
 	// Get repository state
-	repo, err := repository.NewGitRepository(tmpDir, false)
+	repo, err := repository.NewGitRepository(tmpDir, false, true)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -702,7 +702,7 @@ func TestGetRepositoryState_StagedFileWithUnstagedModifications(t *testing.T) {
 	}
 
 	// Get repository state
-	repo, err := repository.NewGitRepository(tmpDir, false)
+	repo, err := repository.NewGitRepository(tmpDir, false, true)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -771,7 +771,7 @@ func TestGetRepositoryState_BinaryFilesHaveEmptyDiff(t *testing.T) {
 	}
 
 	// Get repository state
-	repo, err := repository.NewGitRepository(tmpDir, false)
+	repo, err := repository.NewGitRepository(tmpDir, false, true)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -874,7 +874,7 @@ func TestGetRepositoryState_HandlesUnmergedFiles(t *testing.T) {
 	cmd.Run() // Ignore error - merge will create conflict
 
 	// Get repository state - should handle unmerged files gracefully
-	repo, err := repository.NewGitRepository(tmpDir, false)
+	repo, err := repository.NewGitRepository(tmpDir, false, true)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -921,7 +921,7 @@ func TestGetRepositoryState_HandlesEmptyRepository(t *testing.T) {
 	}
 
 	// Get repository state - should handle empty repository (no HEAD)
-	repo, err := repository.NewGitRepository(tmpDir, false)
+	repo, err := repository.NewGitRepository(tmpDir, false, true)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -1001,7 +1001,7 @@ func TestGetRepositoryState_PerformanceWithManyFiles(t *testing.T) {
 	// Measure performance
 	start := time.Now()
 
-	repo, err := repository.NewGitRepository(tmpDir, false)
+	repo, err := repository.NewGitRepository(tmpDir, false, true)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -1074,7 +1074,7 @@ func TestGetRepositoryState_ErrorRate(t *testing.T) {
 	}
 
 	// Get repository state
-	repo, err := repository.NewGitRepository(tmpDir, false)
+	repo, err := repository.NewGitRepository(tmpDir, false, true)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}

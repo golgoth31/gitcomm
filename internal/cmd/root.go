@@ -24,6 +24,7 @@ var (
 	addAll     bool
 	noSignoff  bool
 	noSign     bool
+	noRTK      bool
 	provider   string
 	skipAI     bool
 	configPath string
@@ -76,10 +77,17 @@ func runCommand(cmd *cobra.Command, args []string) {
 	}
 
 	// Initialize git repository early (needed for restoration)
-	gitRepo, err := repository.NewGitRepository("", noSign)
+	gitRepo, err := repository.NewGitRepository("", noSign, noRTK)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: failed to initialize git repository: %s\n", repository.FormatErrorForDisplay(err))
 		os.Exit(1)
+	}
+
+	// Display backend info
+	if gitRepo.UsesRTK() {
+		fmt.Fprintln(os.Stderr, "Using rtk as git proxy")
+	} else {
+		fmt.Fprintln(os.Stderr, "Using git directly")
 	}
 
 	// Create commit options
@@ -95,6 +103,8 @@ func runCommand(cmd *cobra.Command, args []string) {
 		Bool("auto_stage", options.AutoStage).
 		Bool("no_signoff", options.NoSignoff).
 		Bool("no_sign", noSign).
+		Bool("no_rtk", noRTK).
+		Bool("uses_rtk", gitRepo.UsesRTK()).
 		Str("ai_provider", options.AIProvider).
 		Bool("skip_ai", options.SkipAI).
 		Msg("CLI options")
@@ -172,6 +182,7 @@ func init() {
 	rootCmd.Flags().BoolVarP(&addAll, "add-all", "a", false, "Automatically stage all unstaged files")
 	rootCmd.Flags().BoolVarP(&noSignoff, "no-signoff", "s", false, "Disable commit signoff")
 	rootCmd.Flags().BoolVar(&noSign, "no-sign", false, "Disable commit signing")
+	rootCmd.Flags().BoolVar(&noRTK, "no-rtk", false, "Disable rtk proxy and use git directly")
 	rootCmd.Flags().StringVar(&provider, "provider", "", "Override default AI provider")
 	rootCmd.Flags().BoolVar(&skipAI, "skip-ai", false, "Skip AI generation and proceed directly to manual input")
 	rootCmd.Flags().StringVar(&configPath, "config", "", "Path to configuration file (default: ~/.gitcomm/config.yaml)")

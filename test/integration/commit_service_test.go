@@ -73,7 +73,7 @@ func TestCommitService_ExcludesNewFilesWithoutAddAllFlag(t *testing.T) {
 	}
 
 	// Create repository
-	gitRepo, err := repository.NewGitRepository(tmpDir, false)
+	gitRepo, err := repository.NewGitRepository(tmpDir, false, false)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -196,7 +196,7 @@ func TestCommitService_IncludesNewFilesWithAddAllFlag(t *testing.T) {
 	}
 
 	// Create repository
-	gitRepo, err := repository.NewGitRepository(tmpDir, false)
+	gitRepo, err := repository.NewGitRepository(tmpDir, false, false)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}

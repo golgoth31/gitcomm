@@ -36,16 +36,17 @@ const (
 
 // gitRepositoryImpl implements GitRepository using external git CLI commands
 type gitRepositoryImpl struct {
-	path   string                 // Repository root path
-	gitBin string                 // Resolved path to git executable
-	rtkBin string                 // Resolved path to rtk executable (empty if not found)
-	useRTK bool                   // Whether to proxy git commands through rtk
-	config *gitconfig.GitConfig   // Git configuration
+	path   string                  // Repository root path
+	gitBin string                  // Resolved path to git executable
+	rtkBin string                  // Resolved path to rtk executable (empty if not found)
+	useRTK bool                    // Whether to proxy git commands through rtk
+	config *gitconfig.GitConfig    // Git configuration
 	signer *gitconfig.CommitSigner // Commit signer configuration
 }
 
-// NewGitRepository creates a new GitRepository implementation using external git CLI
-func NewGitRepository(repoPath string, noSign bool) (GitRepository, error) {
+// NewGitRepository creates a new GitRepository implementation using external git CLI.
+// When noRTK is true, rtk proxy is disabled even if rtk is available on PATH.
+func NewGitRepository(repoPath string, noSign bool, noRTK bool) (GitRepository, error) {
 	// Lookup git executable (FR-016)
 	gitBin, err := exec.LookPath("git")
 	if err != nil {
@@ -60,12 +61,16 @@ func NewGitRepository(repoPath string, noSign bool) (GitRepository, error) {
 	// Check if rtk is available for proxying git commands
 	var rtkBin string
 	var useRTK bool
-	if rtkPath, rtkErr := exec.LookPath("rtk"); rtkErr == nil {
-		rtkBin = rtkPath
-		useRTK = true
-		utils.Logger.Debug().Str("rtk", rtkPath).Msg("rtk found, proxying git commands through rtk")
+	if !noRTK {
+		if rtkPath, rtkErr := exec.LookPath("rtk"); rtkErr == nil {
+			rtkBin = rtkPath
+			useRTK = true
+			utils.Logger.Debug().Str("rtk", rtkPath).Msg("rtk found, proxying git commands through rtk")
+		} else {
+			utils.Logger.Debug().Msg("rtk not found, using git directly")
+		}
 	} else {
-		utils.Logger.Debug().Msg("rtk not found, using git directly")
+		utils.Logger.Debug().Msg("rtk disabled by --no-rtk flag")
 	}
 
 	// Find git repository root
@@ -110,6 +115,11 @@ func NewGitRepository(repoPath string, noSign bool) (GitRepository, error) {
 	}, nil
 }
 
+// UsesRTK returns true if git commands are being proxied through rtk
+func (r *gitRepositoryImpl) UsesRTK() bool {
+	return r.useRTK
+}
+
 // validateGitVersion checks that git version is >= 2.34.0 (required for SSH signing support)
 func validateGitVersion(gitBin string) error {
 	cmd := exec.Command(gitBin, "--version")
@@ -151,39 +161,50 @@ func validateGitVersion(gitBin string) error {
 	return nil
 }
 
-// resolveCommand returns the binary and arguments to use for a git command.
-// When rtk is available, it proxies: rtk git -- <args...>
-// The "--" separates rtk options from git arguments (e.g. -C).
-// Otherwise, it uses git directly: git <args...>
-func (r *gitRepositoryImpl) resolveCommand(args []string) (string, []string) {
+// execGit executes a git command, proxied through rtk when available.
+// rtk preserves raw output when porcelain/machine-readable flags are used,
+// so all commands (including status --porcelain and diff --cached) go through this path.
+func (r *gitRepositoryImpl) execGit(ctx context.Context, args ...string) (string, string, error) {
 	if r.useRTK {
-		return r.rtkBin, append([]string{"git", "--"}, args...)
+		return r.runGitCommand(ctx, r.rtkBin, true, args...)
 	}
-	return r.gitBin, args
+	return r.runGitCommand(ctx, r.gitBin, false, args...)
 }
 
-// execGit executes a git command and returns stdout, stderr, and error.
-// It logs command execution details for debugging (FR-018) and categorizes errors (FR-006).
-func (r *gitRepositoryImpl) execGit(ctx context.Context, args ...string) (string, string, error) {
+// runGitCommand is the shared implementation for executing git commands.
+// When viaRTK is true, the command is proxied as: <bin> git <subcommand> <args...>
+// with cmd.Dir set to the repo path (rtk doesn't support git's global -C flag).
+// Otherwise, -C <path> is prepended to run in the repo directory.
+func (r *gitRepositoryImpl) runGitCommand(ctx context.Context, bin string, viaRTK bool, args ...string) (string, string, error) {
 	// Handle nil context gracefully
 	if ctx == nil {
 		ctx = context.Background()
 	}
 
-	// Prepend -C <path> to run in repo directory
-	allArgs := append([]string{"-C", r.path}, args...)
+	var cmd *exec.Cmd
+	if viaRTK {
+		// rtk git <subcommand> <args...> — run in repo directory via cmd.Dir
+		rtkArgs := append([]string{"git"}, args...)
+		cmd = exec.CommandContext(ctx, bin, rtkArgs...)
+		cmd.Dir = r.path
+	} else {
+		// git -C <path> <args...>
+		allArgs := append([]string{"-C", r.path}, args...)
+		cmd = exec.CommandContext(ctx, bin, allArgs...)
+	}
 
-	bin, resolvedArgs := r.resolveCommand(allArgs)
-	cmd := exec.CommandContext(ctx, bin, resolvedArgs...)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
+
+	// Capture the full command line for logging before execution
+	fullCmd := cmd.String()
 
 	startTime := time.Now()
 	err := cmd.Run()
 	duration := time.Since(startTime)
 
-	// Determine git subcommand for logging
+	// Determine git subcommand for error categorization
 	subcommand := ""
 	if len(args) > 0 {
 		subcommand = args[0]
@@ -191,8 +212,7 @@ func (r *gitRepositoryImpl) execGit(ctx context.Context, args ...string) (string
 
 	// Log execution (FR-018)
 	logEvent := utils.Logger.Debug().
-		Str("command", subcommand).
-		Strs("args", args[1:]).
+		Str("exec", fullCmd).
 		Dur("duration", duration)
 
 	if err != nil {
@@ -259,8 +279,20 @@ func parseStatus(output string) (staged []model.FileChange, unstaged []model.Fil
 			continue
 		}
 
+		// Porcelain v1 format requires position 2 to be a space separator.
+		// This also filters rtk summary lines (e.g., "ok ✓") that don't follow the format.
+		if line[2] != ' ' {
+			continue
+		}
+
 		x := line[0] // Staging area status
 		y := line[1] // Worktree status
+
+		// Validate X and Y are valid porcelain status codes
+		if !isValidPorcelainCode(x) || !isValidPorcelainCode(y) {
+			continue
+		}
+
 		rawPath := line[3:]
 
 		// Handle renames/copies: "ORIG_PATH -> PATH"
@@ -299,6 +331,7 @@ func parseStatus(output string) (staged []model.FileChange, unstaged []model.Fil
 
 // parseDiff parses `git diff --cached --unified=0` output into a per-file diff map.
 // Splits on "diff --git" boundaries, detects binary files, returns map[filepath]diffContent.
+// Only used in direct git mode (not rtk, which provides condensed output via RawDiff).
 func parseDiff(output string) map[string]string {
 	result := make(map[string]string)
 
@@ -394,6 +427,17 @@ func (r *gitRepositoryImpl) isBinaryFile(filePath string) bool {
 	return false
 }
 
+// isValidPorcelainCode returns true if the byte is a valid git porcelain v1 status code.
+// Valid codes: ' ' (unmodified), M, A, D, R, C, U (unmerged), ? (untracked), ! (ignored).
+func isValidPorcelainCode(c byte) bool {
+	switch c {
+	case ' ', 'M', 'A', 'D', 'R', 'C', 'U', '?', '!':
+		return true
+	default:
+		return false
+	}
+}
+
 // porcelainStatusToString converts a porcelain status character to string representation
 func porcelainStatusToString(c byte) string {
 	switch c {
@@ -439,7 +483,7 @@ func (r *gitRepositoryImpl) GetRepositoryState(ctx context.Context) (*model.Repo
 		}
 	}
 
-	// Get status
+	// Get status (porcelain format for structured parsing — rtk preserves this format)
 	statusOut, _, err := r.execGit(ctx, "status", "--porcelain=v1")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get status: %w", err)
@@ -447,17 +491,7 @@ func (r *gitRepositoryImpl) GetRepositoryState(ctx context.Context) (*model.Repo
 
 	staged, unstaged := parseStatus(statusOut)
 
-	// Get diffs for staged files
-	diffOut, _, err := r.execGit(ctx, "diff", "--cached", "--unified=0")
-	if err != nil {
-		// Log error but continue with empty diffs
-		utils.Logger.Debug().Err(err).Msg("Failed to get staged diffs, continuing with empty diffs")
-		diffOut = ""
-	}
-
-	diffs := parseDiff(diffOut)
-
-	// Apply diffs and filtering to staged files
+	// Apply filtering to staged files
 	state := &model.RepositoryState{
 		StagedFiles:   []model.FileChange{},
 		UnstagedFiles: unstaged,
@@ -468,16 +502,36 @@ func (r *gitRepositoryImpl) GetRepositoryState(ctx context.Context) (*model.Repo
 		if file.Status == "added" && !includeNewFiles {
 			continue
 		}
+		state.StagedFiles = append(state.StagedFiles, file)
+	}
 
-		// Check if binary file first (FR-013)
-		if r.isBinaryFile(file.Path) {
-			file.Diff = "" // Binary files have empty diff
-		} else if diff, ok := diffs[file.Path]; ok {
-			// Assign diff from parsed output
-			file.Diff = r.applySizeLimit(diff, file.Path, file.Status)
+	if r.useRTK {
+		// With rtk: get condensed diff output and store as-is for the AI prompt.
+		// No per-file diff parsing needed — rtk produces a human/LLM-optimized format.
+		diffOut, _, err := r.execGit(ctx, "diff", "--cached")
+		if err != nil {
+			utils.Logger.Debug().Err(err).Msg("Failed to get staged diffs via rtk, continuing with empty diff")
+		} else {
+			state.RawDiff = strings.TrimSpace(diffOut)
+			utils.Logger.Debug().Str("raw_diff", state.RawDiff).Msg("rtk diff output captured for AI prompt")
+		}
+	} else {
+		// Without rtk: parse diffs per file from raw git output
+		diffOut, _, err := r.execGit(ctx, "diff", "--cached", "--unified=0")
+		if err != nil {
+			utils.Logger.Debug().Err(err).Msg("Failed to get staged diffs, continuing with empty diffs")
+			diffOut = ""
 		}
 
-		state.StagedFiles = append(state.StagedFiles, file)
+		diffs := parseDiff(diffOut)
+
+		for i, file := range state.StagedFiles {
+			if r.isBinaryFile(file.Path) {
+				state.StagedFiles[i].Diff = "" // Binary files have empty diff
+			} else if diff, ok := diffs[file.Path]; ok {
+				state.StagedFiles[i].Diff = r.applySizeLimit(diff, file.Path, file.Status)
+			}
+		}
 	}
 
 	return state, nil
@@ -527,7 +581,8 @@ func (r *gitRepositoryImpl) CreateCommit(ctx context.Context, message *model.Com
 		"GIT_COMMITTER_EMAIL="+r.config.UserEmail,
 	)
 
-	// If signing is enabled, try signed commit first
+	// If signing is enabled, try signed commit first.
+	// Signed commits use git's -c flag which rtk doesn't support, so always use git directly.
 	if r.signer.Enabled {
 		signArgs := []string{
 			"-c", "gpg.format=ssh",
@@ -536,7 +591,7 @@ func (r *gitRepositoryImpl) CreateCommit(ctx context.Context, message *model.Com
 			"commit", "-S", "-m", commitMsg,
 		}
 
-		err := r.execGitWithEnv(ctx, commitEnv, signArgs...)
+		err := r.execGitWithEnvRaw(ctx, commitEnv, signArgs...)
 		if err != nil {
 			// Check if error is signing-related; if so, retry without signing
 			errStr := err.Error()
@@ -563,26 +618,36 @@ func (r *gitRepositoryImpl) CreateCommit(ctx context.Context, message *model.Com
 
 // execGitWithEnv executes a git command with custom environment variables.
 // Used for commit commands that need GIT_AUTHOR_NAME/EMAIL and signing config.
+// Commit commands are fire-and-forget, so they are proxied through rtk when available.
 func (r *gitRepositoryImpl) execGitWithEnv(ctx context.Context, env []string, args ...string) error {
 	// Handle nil context gracefully
 	if ctx == nil {
 		ctx = context.Background()
 	}
 
-	allArgs := append([]string{"-C", r.path}, args...)
-
-	bin, resolvedArgs := r.resolveCommand(allArgs)
-	cmd := exec.CommandContext(ctx, bin, resolvedArgs...)
+	var cmd *exec.Cmd
+	if r.useRTK {
+		// rtk git <args...> — run in repo directory via cmd.Dir
+		rtkArgs := append([]string{"git"}, args...)
+		cmd = exec.CommandContext(ctx, r.rtkBin, rtkArgs...)
+		cmd.Dir = r.path
+	} else {
+		// git -C <path> <args...>
+		allArgs := append([]string{"-C", r.path}, args...)
+		cmd = exec.CommandContext(ctx, r.gitBin, allArgs...)
+	}
 	cmd.Env = env
 
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
+	fullCmd := cmd.String()
+
 	startTime := time.Now()
 	err := cmd.Run()
 	duration := time.Since(startTime)
 
-	// Determine subcommand for logging
+	// Determine subcommand for error categorization
 	subcommand := ""
 	for _, arg := range args {
 		if !strings.HasPrefix(arg, "-") {
@@ -592,8 +657,56 @@ func (r *gitRepositoryImpl) execGitWithEnv(ctx context.Context, env []string, ar
 	}
 
 	logEvent := utils.Logger.Debug().
-		Str("command", subcommand).
-		Strs("args", args).
+		Str("exec", fullCmd).
+		Dur("duration", duration)
+
+	if err != nil {
+		exitCode := 0
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			exitCode = exitErr.ExitCode()
+		}
+		logEvent.Int("exit_code", exitCode).
+			Str("stderr", strings.TrimSpace(stderr.String())).
+			Msg("git command failed")
+		return categorizeError(subcommand, args, exitCode, stderr.String())
+	}
+
+	logEvent.Int("exit_code", 0).Msg("git command succeeded")
+	return nil
+}
+
+// execGitWithEnvRaw executes a git command with custom environment variables, bypassing rtk.
+// Required for signed commits which use git's -c flag (rtk doesn't support -c).
+func (r *gitRepositoryImpl) execGitWithEnvRaw(ctx context.Context, env []string, args ...string) error {
+	// Handle nil context gracefully
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	allArgs := append([]string{"-C", r.path}, args...)
+	cmd := exec.CommandContext(ctx, r.gitBin, allArgs...)
+	cmd.Env = env
+
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	fullCmd := cmd.String()
+
+	startTime := time.Now()
+	err := cmd.Run()
+	duration := time.Since(startTime)
+
+	// Determine subcommand for error categorization
+	subcommand := ""
+	for _, arg := range args {
+		if !strings.HasPrefix(arg, "-") {
+			subcommand = arg
+			break
+		}
+	}
+
+	logEvent := utils.Logger.Debug().
+		Str("exec", fullCmd).
 		Dur("duration", duration)
 
 	if err != nil {
@@ -634,10 +747,14 @@ func (r *gitRepositoryImpl) StageModifiedFiles(ctx context.Context) (*model.Auto
 	var filesToStage []string
 	lines := strings.Split(statusOut, "\n")
 	for _, line := range lines {
-		if len(line) < 4 {
+		if len(line) < 4 || line[2] != ' ' {
 			continue
 		}
+		x := line[0]
 		y := line[1]
+		if !isValidPorcelainCode(x) || !isValidPorcelainCode(y) {
+			continue
+		}
 		// Stage only modified worktree files (not untracked '?' or unmodified ' ')
 		if y != ' ' && y != '?' {
 			rawPath := line[3:]
@@ -710,10 +827,14 @@ func (r *gitRepositoryImpl) StageAllFilesIncludingUntracked(ctx context.Context)
 	var filesToStage []string
 	lines := strings.Split(statusOut, "\n")
 	for _, line := range lines {
-		if len(line) < 4 {
+		if len(line) < 4 || line[2] != ' ' {
 			continue
 		}
+		x := line[0]
 		y := line[1]
+		if !isValidPorcelainCode(x) || !isValidPorcelainCode(y) {
+			continue
+		}
 		// Stage all worktree files that are not unmodified
 		if y != ' ' {
 			rawPath := line[3:]

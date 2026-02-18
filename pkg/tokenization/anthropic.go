@@ -23,11 +23,15 @@ func (a *AnthropicTokenCalculator) Calculate(text string) int {
 // CalculateForRepositoryState estimates tokens for repository state
 func (a *AnthropicTokenCalculator) CalculateForRepositoryState(state *model.RepositoryState) (int, error) {
 	var text string
-	for _, file := range state.StagedFiles {
-		text += file.Path + " " + file.Status + " " + file.Diff + "\n"
-	}
-	for _, file := range state.UnstagedFiles {
-		text += file.Path + " " + file.Status + " " + file.Diff + "\n"
+	if state.RawDiff != "" {
+		text = state.RawDiff
+	} else {
+		for _, file := range state.StagedFiles {
+			text += file.Path + " " + file.Status + " " + file.Diff + "\n"
+		}
+		for _, file := range state.UnstagedFiles {
+			text += file.Path + " " + file.Status + " " + file.Diff + "\n"
+		}
 	}
 	return a.Calculate(text), nil
 }

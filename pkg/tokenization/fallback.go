@@ -22,13 +22,17 @@ func (f *FallbackTokenCalculator) Calculate(text string) int {
 // CalculateForRepositoryState estimates tokens for repository state
 func (f *FallbackTokenCalculator) CalculateForRepositoryState(state *model.RepositoryState) (int, error) {
 	var text string
-	for _, file := range state.StagedFiles {
-		utils.Logger.Debug().Msgf("Staged file: %s", file.Diff)
-		text += file.Path + " " + file.Status + " " + file.Diff + "\n"
-	}
-	for _, file := range state.UnstagedFiles {
-		utils.Logger.Debug().Msgf("Unstaged file: %s", file.Diff)
-		text += file.Path + " " + file.Status + " " + file.Diff + "\n"
+	if state.RawDiff != "" {
+		text = state.RawDiff
+	} else {
+		for _, file := range state.StagedFiles {
+			utils.Logger.Debug().Msgf("Staged file: %s", file.Diff)
+			text += file.Path + " " + file.Status + " " + file.Diff + "\n"
+		}
+		for _, file := range state.UnstagedFiles {
+			utils.Logger.Debug().Msgf("Unstaged file: %s", file.Diff)
+			text += file.Path + " " + file.Status + " " + file.Diff + "\n"
+		}
 	}
 	return f.Calculate(text), nil
 }

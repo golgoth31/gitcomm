@@ -25,13 +25,17 @@ func (t *TikTokenCalculator) Calculate(text string) int {
 // CalculateForRepositoryState estimates tokens for repository state
 func (t *TikTokenCalculator) CalculateForRepositoryState(state *model.RepositoryState) (int, error) {
 	var text string
-	for _, file := range state.StagedFiles {
-		utils.Logger.Debug().Msgf("Staged file: %+v", file)
-		text += file.Path + " " + file.Status + " " + file.Diff + "\n"
-	}
-	for _, file := range state.UnstagedFiles {
-		utils.Logger.Debug().Msgf("Unstaged file: %+v", file)
-		text += file.Path + " " + file.Status + " " + file.Diff + "\n"
+	if state.RawDiff != "" {
+		text = state.RawDiff
+	} else {
+		for _, file := range state.StagedFiles {
+			utils.Logger.Debug().Msgf("Staged file: %+v", file)
+			text += file.Path + " " + file.Status + " " + file.Diff + "\n"
+		}
+		for _, file := range state.UnstagedFiles {
+			utils.Logger.Debug().Msgf("Unstaged file: %+v", file)
+			text += file.Path + " " + file.Status + " " + file.Diff + "\n"
+		}
 	}
 	return t.Calculate(text), nil
 }

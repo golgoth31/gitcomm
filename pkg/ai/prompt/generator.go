@@ -66,7 +66,8 @@ func (g *UnifiedPromptGenerator) GenerateSystemMessage(validator conventional.Me
 	return sb.String(), nil
 }
 
-// GenerateUserMessage generates the user message with repository state
+// GenerateUserMessage generates the user message with repository state.
+// When RawDiff is available (rtk mode), it is used directly instead of per-file diffs.
 func (g *UnifiedPromptGenerator) GenerateUserMessage(repoState *model.RepositoryState) (string, error) {
 	if repoState == nil {
 		return "", ErrNilRepositoryState
@@ -76,7 +77,16 @@ func (g *UnifiedPromptGenerator) GenerateUserMessage(repoState *model.Repository
 
 	sb.WriteString("Generate a commit message for the following changes:\n\n")
 
-	// Add staged files
+	// When RawDiff is available (rtk condensed output), use it directly
+	if repoState.RawDiff != "" {
+		sb.WriteString(repoState.RawDiff)
+		if !strings.HasSuffix(repoState.RawDiff, "\n") {
+			sb.WriteString("\n")
+		}
+		return sb.String(), nil
+	}
+
+	// Standard mode: build prompt from structured file changes
 	if len(repoState.StagedFiles) > 0 {
 		sb.WriteString("Staged files:\n")
 		for _, file := range repoState.StagedFiles {
@@ -90,7 +100,6 @@ func (g *UnifiedPromptGenerator) GenerateUserMessage(repoState *model.Repository
 		}
 	}
 
-	// Add unstaged files
 	if len(repoState.UnstagedFiles) > 0 {
 		if len(repoState.StagedFiles) > 0 {
 			sb.WriteString("\n")
