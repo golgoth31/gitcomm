@@ -130,26 +130,13 @@ func TestLoadConfig_CustomConfigPath(t *testing.T) {
 
 // T023: Test default config path (~/.gitcomm/config.yaml)
 func TestLoadConfig_DefaultConfigPath(t *testing.T) {
-	// Get home directory
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		t.Fatalf("Failed to get home directory: %v", err)
-	}
+	// Override HOME so os.UserHomeDir() returns a temp directory,
+	// preventing LoadConfig("") from touching the real ~/.gitcomm/.
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("USERPROFILE", tmpDir) // Windows compat
 
-	defaultPath := filepath.Join(homeDir, ".gitcomm", "config.yaml")
-
-	// Backup existing file if it exists
-	backupPath := defaultPath + ".backup"
-	if _, err := os.Stat(defaultPath); err == nil {
-		if err := os.Rename(defaultPath, backupPath); err != nil {
-			t.Fatalf("Failed to backup existing config file: %v", err)
-		}
-		defer os.Rename(backupPath, defaultPath)
-	}
-
-	// Ensure file doesn't exist
-	os.Remove(defaultPath)
-	os.RemoveAll(filepath.Dir(defaultPath))
+	defaultPath := filepath.Join(tmpDir, ".gitcomm", "config.yaml")
 
 	// Load config with empty path (should use default)
 	cfg, err := config.LoadConfig("")
@@ -160,14 +147,10 @@ func TestLoadConfig_DefaultConfigPath(t *testing.T) {
 		t.Fatalf("LoadConfig returned nil config")
 	}
 
-	// Verify file was created at default path
+	// Verify file was created at default path inside the temp home
 	if _, err := os.Stat(defaultPath); os.IsNotExist(err) {
 		t.Fatalf("Config file was not created at default path %s", defaultPath)
 	}
-
-	// Cleanup
-	os.Remove(defaultPath)
-	os.RemoveAll(filepath.Dir(defaultPath))
 }
 
 // T024: Test single placeholder substitution

@@ -1140,6 +1140,110 @@ func TestGetRepositoryState_IncludesNewFilesWhenAddAllTrue(t *testing.T) {
 	}
 }
 
+// TestResolveCommand_WithRTK verifies that when rtk is enabled, commands are proxied through rtk.
+func TestResolveCommand_WithRTK(t *testing.T) {
+	t.Parallel()
+
+	repo := &gitRepositoryImpl{
+		gitBin: "/usr/bin/git",
+		rtkBin: "/usr/local/bin/rtk",
+		useRTK: true,
+	}
+
+	tests := []struct {
+		name         string
+		args         []string
+		expectedBin  string
+		expectedArgs []string
+	}{
+		{
+			name:         "status command",
+			args:         []string{"-C", "/repo", "status", "--porcelain=v1"},
+			expectedBin:  "/usr/local/bin/rtk",
+			expectedArgs: []string{"git", "--", "-C", "/repo", "status", "--porcelain=v1"},
+		},
+		{
+			name:         "diff command",
+			args:         []string{"-C", "/repo", "diff", "--cached", "--unified=0"},
+			expectedBin:  "/usr/local/bin/rtk",
+			expectedArgs: []string{"git", "--", "-C", "/repo", "diff", "--cached", "--unified=0"},
+		},
+		{
+			name:         "commit command",
+			args:         []string{"-C", "/repo", "commit", "-m", "test"},
+			expectedBin:  "/usr/local/bin/rtk",
+			expectedArgs: []string{"git", "--", "-C", "/repo", "commit", "-m", "test"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			bin, args := repo.resolveCommand(tt.args)
+			if bin != tt.expectedBin {
+				t.Errorf("Expected bin %q, got %q", tt.expectedBin, bin)
+			}
+			if len(args) != len(tt.expectedArgs) {
+				t.Fatalf("Expected %d args, got %d: %v", len(tt.expectedArgs), len(args), args)
+			}
+			for i, arg := range args {
+				if arg != tt.expectedArgs[i] {
+					t.Errorf("Arg[%d]: expected %q, got %q", i, tt.expectedArgs[i], arg)
+				}
+			}
+		})
+	}
+}
+
+// TestResolveCommand_WithoutRTK verifies that when rtk is not available, commands use git directly.
+func TestResolveCommand_WithoutRTK(t *testing.T) {
+	t.Parallel()
+
+	repo := &gitRepositoryImpl{
+		gitBin: "/usr/bin/git",
+		rtkBin: "",
+		useRTK: false,
+	}
+
+	tests := []struct {
+		name         string
+		args         []string
+		expectedBin  string
+		expectedArgs []string
+	}{
+		{
+			name:         "status command",
+			args:         []string{"-C", "/repo", "status", "--porcelain=v1"},
+			expectedBin:  "/usr/bin/git",
+			expectedArgs: []string{"-C", "/repo", "status", "--porcelain=v1"},
+		},
+		{
+			name:         "diff command",
+			args:         []string{"-C", "/repo", "diff", "--cached"},
+			expectedBin:  "/usr/bin/git",
+			expectedArgs: []string{"-C", "/repo", "diff", "--cached"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			bin, args := repo.resolveCommand(tt.args)
+			if bin != tt.expectedBin {
+				t.Errorf("Expected bin %q, got %q", tt.expectedBin, bin)
+			}
+			if len(args) != len(tt.expectedArgs) {
+				t.Fatalf("Expected %d args, got %d: %v", len(tt.expectedArgs), len(args), args)
+			}
+			for i, arg := range args {
+				if arg != tt.expectedArgs[i] {
+					t.Errorf("Arg[%d]: expected %q, got %q", i, tt.expectedArgs[i], arg)
+				}
+			}
+		})
+	}
+}
+
 // TestGetRepositoryState_DefaultBehaviorIncludesAll verifies backward compatibility:
 // when context value is not present, all files are included (default behavior).
 func TestGetRepositoryState_DefaultBehaviorIncludesAll(t *testing.T) {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/gage-technologies/mistral-go"
 	"github.com/golgoth31/gitcomm/internal/model"
@@ -27,7 +28,19 @@ func NewMistralProvider(config *model.AIProviderConfig) AIProvider {
 	}
 
 	// Initialize Mistral SDK client
-	client := mistral.NewMistralClientDefault(config.APIKey)
+	// Use custom endpoint constructor when endpoint is configured (e.g., for testing or self-hosted)
+	var client *mistral.MistralClient
+	if config.Endpoint != "" {
+		timeout := config.Timeout
+		if timeout == 0 {
+			timeout = 30 * time.Second
+		}
+		// Use 1 retry for custom endpoints (self-hosted, testing) to avoid
+		// excessive retries against non-standard servers
+		client = mistral.NewMistralClient(config.APIKey, config.Endpoint, 1, timeout)
+	} else {
+		client = mistral.NewMistralClientDefault(config.APIKey)
+	}
 
 	return &MistralProvider{
 		config:    config,
@@ -80,44 +93,62 @@ func (p *MistralProvider) GenerateCommitMessage(ctx context.Context, repoState *
 	params := mistral.DefaultChatRequestParams
 	params.MaxTokens = maxTokens
 
-	// Execute SDK API call
-	// Note: Mistral SDK doesn't support context directly, but respects timeout from HTTP client
-	resp, err := p.client.Chat(modelName, messages, &params)
-	if err != nil {
-		// Map SDK errors to existing error types
-		return "", p.mapSDKError(err)
+	// Execute SDK API call with context support
+	// The Mistral SDK doesn't accept context.Context, so we wrap the call
+	// in a goroutine and use select to respect context cancellation/deadline.
+	type chatResult struct {
+		resp *mistral.ChatCompletionResponse
+		err  error
 	}
+	resultCh := make(chan chatResult, 1)
+	go func() {
+		resp, err := p.client.Chat(modelName, messages, &params)
+		resultCh <- chatResult{resp: resp, err: err}
+	}()
 
-	// Extract message content from SDK response
-	if len(resp.Choices) == 0 {
-		return "", fmt.Errorf("%w: no response from API", utils.ErrAIProviderUnavailable)
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	case result := <-resultCh:
+		if result.err != nil {
+			return "", p.mapSDKError(result.err)
+		}
+
+		// Extract message content from SDK response
+		if len(result.resp.Choices) == 0 {
+			return "", fmt.Errorf("%w: no response from API", utils.ErrAIProviderUnavailable)
+		}
+
+		content := result.resp.Choices[0].Message.Content
+		if content == "" {
+			return "", fmt.Errorf("%w: empty response from API", utils.ErrAIProviderUnavailable)
+		}
+
+		return content, nil
 	}
-
-	content := resp.Choices[0].Message.Content
-	if content == "" {
-		return "", fmt.Errorf("%w: empty response from API", utils.ErrAIProviderUnavailable)
-	}
-
-	return content, nil
 }
 
 // mapSDKError maps SDK-specific errors to existing error types
 func (p *MistralProvider) mapSDKError(err error) error {
-	// Check for authentication errors
 	errStr := err.Error()
-	// Map common SDK error patterns to existing error types
+
+	// Check for context cancellation/deadline
+	if strings.Contains(strings.ToLower(errStr), "timeout") ||
+		strings.Contains(strings.ToLower(errStr), "deadline") ||
+		strings.Contains(strings.ToLower(errStr), "context canceled") {
+		return fmt.Errorf("%w: %v", utils.ErrAIProviderUnavailable, err)
+	}
+
+	// Map HTTP error codes from SDK format "(HTTP Error NNN) ..."
+	if strings.Contains(errStr, "HTTP Error") {
+		return fmt.Errorf("%w: %v", utils.ErrAIProviderUnavailable, err)
+	}
+
+	// Check for authentication errors
 	if strings.Contains(strings.ToLower(errStr), "authentication") ||
 		strings.Contains(strings.ToLower(errStr), "invalid") ||
 		strings.Contains(errStr, "401") {
-		return fmt.Errorf("%w: API key invalid", utils.ErrAIProviderUnavailable)
-	}
-	if strings.Contains(strings.ToLower(errStr), "rate limit") ||
-		strings.Contains(errStr, "429") {
-		return fmt.Errorf("%w: rate limit exceeded", utils.ErrAIProviderUnavailable)
-	}
-	if strings.Contains(strings.ToLower(errStr), "timeout") ||
-		strings.Contains(strings.ToLower(errStr), "deadline") {
-		return fmt.Errorf("%w: timeout", utils.ErrAIProviderUnavailable)
+		return fmt.Errorf("%w: check API key and network connection: API key invalid", utils.ErrAIProviderUnavailable)
 	}
 
 	// Generic error mapping - preserve user-facing message, wrap with ErrAIProviderUnavailable

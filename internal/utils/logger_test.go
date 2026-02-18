@@ -3,11 +3,19 @@ package utils
 import (
 	"bytes"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 
 	"github.com/rs/zerolog"
 )
+
+// stripANSI removes ANSI escape codes from a string for reliable test assertions
+var ansiRegex = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+
+func stripANSI(s string) string {
+	return ansiRegex.ReplaceAllString(s, "")
+}
 
 func TestInitLogger_DebugTrue(t *testing.T) {
 	// Capture stderr
@@ -155,7 +163,8 @@ func TestInitLogger_LogOutputFormat(t *testing.T) {
 
 	var buf bytes.Buffer
 	buf.ReadFrom(r)
-	output := buf.String()
+	// Strip ANSI escape codes for reliable assertions (ConsoleWriter may emit colors)
+	output := stripANSI(buf.String())
 
 	// Verify output format is raw text (human-readable)
 	if !strings.Contains(output, "[DEBUG]") {

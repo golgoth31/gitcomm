@@ -343,7 +343,7 @@ func TestGetRepositoryState_WithStagedCopiedFile(t *testing.T) {
 		t.Fatalf("Failed to create copied file: %v", err)
 	}
 
-	cmd = exec.Command("git", "-C", tmpDir, "add", "--find-copies", destFile)
+	cmd = exec.Command("git", "-C", tmpDir, "add", destFile)
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("Failed to stage copied file: %v", err)
 	}

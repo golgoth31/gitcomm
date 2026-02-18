@@ -325,19 +325,19 @@ func TestMistralProvider_GenerateCommitMessage_APIErrors(t *testing.T) {
 			name:           "401 Unauthorized",
 			statusCode:     http.StatusUnauthorized,
 			responseBody:   `{"error": "Invalid API key"}`,
-			expectedErrMsg: "API returned status 401",
+			expectedErrMsg: "HTTP Error 401",
 		},
 		{
 			name:           "429 Rate Limit",
 			statusCode:     http.StatusTooManyRequests,
 			responseBody:   `{"error": "Rate limit exceeded"}`,
-			expectedErrMsg: "API returned status 429",
+			expectedErrMsg: "HTTP Error 429",
 		},
 		{
 			name:           "500 Internal Server Error",
 			statusCode:     http.StatusInternalServerError,
 			responseBody:   `{"error": "Internal server error"}`,
-			expectedErrMsg: "API returned status 500",
+			expectedErrMsg: "HTTP Error 500",
 		},
 	}
 
@@ -431,11 +431,11 @@ func TestMistralProvider_GenerateCommitMessage_Timeout(t *testing.T) {
 
 	_, err := provider.GenerateCommitMessage(ctx, state)
 	if err == nil {
-		t.Error("Expected error for timeout")
+		t.Fatal("Expected error for timeout")
 	}
 
 	// Should be context deadline exceeded or similar
-	if !strings.Contains(err.Error(), "context deadline exceeded") && !strings.Contains(err.Error(), "timeout") {
+	if !errors.Is(err, context.DeadlineExceeded) && !strings.Contains(err.Error(), "timeout") {
 		t.Logf("Timeout error (expected): %v", err)
 	}
 }

@@ -38,6 +38,8 @@ const (
 type gitRepositoryImpl struct {
 	path   string                 // Repository root path
 	gitBin string                 // Resolved path to git executable
+	rtkBin string                 // Resolved path to rtk executable (empty if not found)
+	useRTK bool                   // Whether to proxy git commands through rtk
 	config *gitconfig.GitConfig   // Git configuration
 	signer *gitconfig.CommitSigner // Commit signer configuration
 }
@@ -53,6 +55,17 @@ func NewGitRepository(repoPath string, noSign bool) (GitRepository, error) {
 	// Validate git version >= 2.34.0 (FR-016)
 	if err := validateGitVersion(gitBin); err != nil {
 		return nil, err
+	}
+
+	// Check if rtk is available for proxying git commands
+	var rtkBin string
+	var useRTK bool
+	if rtkPath, rtkErr := exec.LookPath("rtk"); rtkErr == nil {
+		rtkBin = rtkPath
+		useRTK = true
+		utils.Logger.Debug().Str("rtk", rtkPath).Msg("rtk found, proxying git commands through rtk")
+	} else {
+		utils.Logger.Debug().Msg("rtk not found, using git directly")
 	}
 
 	// Find git repository root
@@ -90,6 +103,8 @@ func NewGitRepository(repoPath string, noSign bool) (GitRepository, error) {
 	return &gitRepositoryImpl{
 		path:   path,
 		gitBin: gitBin,
+		rtkBin: rtkBin,
+		useRTK: useRTK,
 		config: gitConfig,
 		signer: signer,
 	}, nil
@@ -136,6 +151,17 @@ func validateGitVersion(gitBin string) error {
 	return nil
 }
 
+// resolveCommand returns the binary and arguments to use for a git command.
+// When rtk is available, it proxies: rtk git -- <args...>
+// The "--" separates rtk options from git arguments (e.g. -C).
+// Otherwise, it uses git directly: git <args...>
+func (r *gitRepositoryImpl) resolveCommand(args []string) (string, []string) {
+	if r.useRTK {
+		return r.rtkBin, append([]string{"git", "--"}, args...)
+	}
+	return r.gitBin, args
+}
+
 // execGit executes a git command and returns stdout, stderr, and error.
 // It logs command execution details for debugging (FR-018) and categorizes errors (FR-006).
 func (r *gitRepositoryImpl) execGit(ctx context.Context, args ...string) (string, string, error) {
@@ -147,7 +173,8 @@ func (r *gitRepositoryImpl) execGit(ctx context.Context, args ...string) (string
 	// Prepend -C <path> to run in repo directory
 	allArgs := append([]string{"-C", r.path}, args...)
 
-	cmd := exec.CommandContext(ctx, r.gitBin, allArgs...)
+	bin, resolvedArgs := r.resolveCommand(allArgs)
+	cmd := exec.CommandContext(ctx, bin, resolvedArgs...)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -544,7 +571,8 @@ func (r *gitRepositoryImpl) execGitWithEnv(ctx context.Context, env []string, ar
 
 	allArgs := append([]string{"-C", r.path}, args...)
 
-	cmd := exec.CommandContext(ctx, r.gitBin, allArgs...)
+	bin, resolvedArgs := r.resolveCommand(allArgs)
+	cmd := exec.CommandContext(ctx, bin, resolvedArgs...)
 	cmd.Env = env
 
 	var stderr bytes.Buffer
