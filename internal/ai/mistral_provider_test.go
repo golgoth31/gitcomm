@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -150,9 +151,32 @@ func TestMistralProvider_ContextCancellation(t *testing.T) {
 	if err == nil {
 		t.Error("Expected error for cancelled context")
 	}
-	// Error should be context-related
+	// Error must preserve its context identity
 	if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
-		t.Logf("Context cancellation error (expected): %v", err)
+		t.Errorf("Expected context-related error, got: %v", err)
+	}
+}
+
+// TestMistralProvider_MappingPreservesContextIdentity verifies mapSDKError keeps
+// context cancellation/deadline identity so errors.Is works for callers
+func TestMistralProvider_MappingPreservesContextIdentity(t *testing.T) {
+	p := &MistralProvider{}
+	tests := []struct {
+		name string
+		err  error
+	}{
+		{name: "context canceled", err: context.Canceled},
+		{name: "wrapped context canceled", err: fmt.Errorf("network error: %w", context.Canceled)},
+		{name: "context deadline exceeded", err: context.DeadlineExceeded},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := p.mapSDKError(tt.err)
+			if !errors.Is(got, context.Canceled) && !errors.Is(got, context.DeadlineExceeded) {
+				t.Errorf("Expected context identity preserved, got: %v", got)
+			}
+		})
 	}
 }
 
@@ -436,7 +460,7 @@ func TestMistralProvider_GenerateCommitMessage_Timeout(t *testing.T) {
 
 	// Should be context deadline exceeded or similar
 	if !errors.Is(err, context.DeadlineExceeded) && !strings.Contains(err.Error(), "timeout") {
-		t.Logf("Timeout error (expected): %v", err)
+		t.Errorf("Expected deadline/timeout error, got: %v", err)
 	}
 }
 

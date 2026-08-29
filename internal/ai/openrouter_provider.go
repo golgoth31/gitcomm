@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/golgoth31/gitcomm/internal/model"
 	"github.com/golgoth31/gitcomm/internal/utils"
@@ -19,6 +20,9 @@ const openRouterDefaultBaseURL = "https://openrouter.ai/api/v1"
 // openRouterDefaultModel is the default OpenRouter model used when none is configured
 const openRouterDefaultModel = "openrouter/auto"
 
+// openRouterDefaultTimeout is the default request timeout used when none is configured
+const openRouterDefaultTimeout = 30 * time.Second
+
 // OpenRouterProvider implements AIProvider for OpenRouter
 type OpenRouterProvider struct {
 	config    *model.AIProviderConfig
@@ -27,8 +31,15 @@ type OpenRouterProvider struct {
 	validator conventional.MessageValidator
 }
 
+// Compile-time assertion that OpenRouterProvider implements the AIProvider interface
+var _ AIProvider = (*OpenRouterProvider)(nil)
+
 // NewOpenRouterProvider creates a new OpenRouter provider
 func NewOpenRouterProvider(config *model.AIProviderConfig) AIProvider {
+	if config == nil {
+		config = &model.AIProviderConfig{}
+	}
+
 	if config.APIKey == "" {
 		utils.Logger.Debug().Msg("OpenRouter API key not provided")
 	}
@@ -38,17 +49,21 @@ func NewOpenRouterProvider(config *model.AIProviderConfig) AIProvider {
 		baseURL = openRouterDefaultBaseURL
 	}
 
+	// Honor configured timeout via a custom HTTP client; default to 30s when unset
+	// so the provider never relies on the SDK's default client (which has no timeout)
+	timeout := config.Timeout
+	if timeout <= 0 {
+		timeout = openRouterDefaultTimeout
+	}
+
 	clientOptions := []option.RequestOption{
 		option.WithAPIKey(config.APIKey),
 		option.WithBaseURL(baseURL),
-	}
-
-	// Honor configured timeout (default: 30s) via a custom HTTP client
-	if config.Timeout > 0 {
-		clientOptions = append(clientOptions, option.WithHTTPClient(&http.Client{Timeout: config.Timeout}))
+		option.WithHTTPClient(&http.Client{Timeout: timeout}),
 	}
 
 	// Initialize OpenAI SDK client pointed at OpenRouter
+	// NewClient doesn't return an error - it reads from environment or uses provided options
 	client := openai.NewClient(clientOptions...)
 
 	return &OpenRouterProvider{
@@ -113,21 +128,31 @@ func (p *OpenRouterProvider) GenerateCommitMessage(ctx context.Context, repoStat
 	// Execute Chat Completions API call with context (respects cancellation/timeout)
 	resp, err := p.client.Chat.Completions.New(ctx, req)
 	if err != nil {
-		utils.Logger.Debug().Err(err).Msg("Error generating commit message")
+		utils.Logger.Warn().Err(err).Msg("Error generating commit message from OpenRouter")
 		return "", mapOpenAIError(err)
 	}
 
-	utils.Logger.Debug().Msgf("Chat Completions API response: %+v", resp)
-
 	// Extract message content from Chat Completions response
 	if len(resp.Choices) == 0 {
-		return "", fmt.Errorf("%w: empty response from API", utils.ErrAIProviderUnavailable)
+		return "", fmt.Errorf("%w: empty response from API (no choices)", utils.ErrAIProviderUnavailable)
 	}
 
-	content := resp.Choices[0].Message.Content
+	choice := resp.Choices[0]
+
+	// Surface content-filter refusals instead of a generic empty-response error
+	if choice.Message.Refusal != "" {
+		return "", fmt.Errorf("%w: model refused to respond: %s", utils.ErrAIProviderUnavailable, choice.Message.Refusal)
+	}
+
+	content := choice.Message.Content
 	if content == "" {
-		return "", fmt.Errorf("%w: empty response from API", utils.ErrAIProviderUnavailable)
+		// A length stop means MaxTokens cut the response off, not that it was empty
+		if choice.FinishReason == "length" {
+			return "", fmt.Errorf("%w: response truncated (increase max_tokens)", utils.ErrAIProviderUnavailable)
+		}
+		return "", fmt.Errorf("%w: empty response from API (finish_reason: %s)", utils.ErrAIProviderUnavailable, choice.FinishReason)
 	}
 
+	utils.Logger.Debug().Str("choice_content", content).Msg("Chat Completions response received")
 	return content, nil
 }

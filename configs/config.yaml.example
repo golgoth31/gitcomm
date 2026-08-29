@@ -21,6 +21,7 @@ ai:
       model: openrouter/auto           # Optional, default: openrouter/auto
       endpoint: https://openrouter.ai/api/v1  # Optional, default: https://openrouter.ai/api/v1
       timeout: 30s                    # Optional, default: 30s
+      max_tokens: 1024                # Optional; omit for server default (unlike anthropic/mistral, 0 is not treated as 500)
     local:
       endpoint: http://localhost:8080/v1/chat/completions  # Required for local models
       api_key: ""                    # Optional

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/golgoth31/gitcomm/internal/model"
@@ -102,10 +103,8 @@ func (p *OpenAIProvider) GenerateCommitMessage(ctx context.Context, repoState *m
 	if err != nil {
 		// Map Responses API errors to existing error types
 		utils.Logger.Debug().Err(err).Msg("Error generating commit message")
-		return "", p.mapSDKError(err)
+		return "", mapOpenAIError(err)
 	}
-
-	utils.Logger.Debug().Msgf("Responses API response: %+v", resp)
 
 	// Extract message content from Responses API response
 	// Use OutputText() method to extract text from Output array
@@ -114,12 +113,8 @@ func (p *OpenAIProvider) GenerateCommitMessage(ctx context.Context, repoState *m
 		return "", fmt.Errorf("%w: empty response from API", utils.ErrAIProviderUnavailable)
 	}
 
+	utils.Logger.Debug().Str("output", content).Msg("Responses API response received")
 	return content, nil
-}
-
-// mapSDKError maps OpenAI SDK-specific errors to existing error types
-func (p *OpenAIProvider) mapSDKError(err error) error {
-	return mapOpenAIError(err)
 }
 
 // mapOpenAIError maps OpenAI SDK API errors to existing error types
@@ -129,24 +124,36 @@ func mapOpenAIError(err error) error {
 		return err
 	}
 
-	// Check for authentication errors
-	errStr := err.Error()
-	// Map common Responses API error patterns to existing error types
-	if strings.Contains(strings.ToLower(errStr), "authentication") ||
-		strings.Contains(strings.ToLower(errStr), "invalid") ||
-		strings.Contains(errStr, "401") {
-		return fmt.Errorf("%w: API key invalid", utils.ErrAIProviderUnavailable)
-	}
-	if strings.Contains(strings.ToLower(errStr), "rate limit") ||
-		strings.Contains(errStr, "429") {
-		return fmt.Errorf("%w: rate limit exceeded", utils.ErrAIProviderUnavailable)
-	}
-	if strings.Contains(strings.ToLower(errStr), "timeout") ||
-		strings.Contains(strings.ToLower(errStr), "deadline") {
-		return fmt.Errorf("%w: timeout", utils.ErrAIProviderUnavailable)
+	// Classify typed API errors by HTTP status code first (reliable and
+	// format-independent compared to string matching on the SDK message)
+	var apiErr *openai.Error
+	if errors.As(err, &apiErr) {
+		switch apiErr.StatusCode {
+		case http.StatusUnauthorized, http.StatusForbidden:
+			return fmt.Errorf("%w: API key invalid: %w", utils.ErrAIProviderUnavailable, err)
+		case http.StatusTooManyRequests:
+			return fmt.Errorf("%w: rate limit exceeded: %w", utils.ErrAIProviderUnavailable, err)
+		case http.StatusNotFound:
+			return fmt.Errorf("%w: model not found or no access: %w", utils.ErrAIProviderUnavailable, err)
+		}
 	}
 
-	// Generic error mapping for unmappable errors - preserve user-facing message, wrap with ErrAIProviderUnavailable
-	// Original SDK error message preserved in wrapped error for debugging
-	return fmt.Errorf("%w: %v", utils.ErrAIProviderUnavailable, err)
+	// String matching as a fallback for non-typed transport errors (network, DNS, etc.)
+	errStr := strings.ToLower(err.Error())
+	if strings.Contains(errStr, "authentication") ||
+		strings.Contains(errStr, "401") ||
+		strings.Contains(errStr, "invalid api key") {
+		return fmt.Errorf("%w: API key invalid: %w", utils.ErrAIProviderUnavailable, err)
+	}
+	if strings.Contains(errStr, "rate limit") ||
+		strings.Contains(errStr, "429") {
+		return fmt.Errorf("%w: rate limit exceeded: %w", utils.ErrAIProviderUnavailable, err)
+	}
+	if strings.Contains(errStr, "timeout") ||
+		strings.Contains(errStr, "deadline") {
+		return fmt.Errorf("%w: timeout: %w", utils.ErrAIProviderUnavailable, err)
+	}
+
+	// Generic error mapping - preserve original error chain for debugging
+	return fmt.Errorf("%w: %w", utils.ErrAIProviderUnavailable, err)
 }

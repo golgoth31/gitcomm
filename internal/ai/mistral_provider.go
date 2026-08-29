@@ -2,6 +2,7 @@ package ai
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -130,6 +131,11 @@ func (p *MistralProvider) GenerateCommitMessage(ctx context.Context, repoState *
 
 // mapSDKError maps SDK-specific errors to existing error types
 func (p *MistralProvider) mapSDKError(err error) error {
+	// Preserve context errors so callers can detect cancellation/deadline via errors.Is
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return err
+	}
+
 	errStr := err.Error()
 
 	// Check for context cancellation/deadline

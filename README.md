@@ -129,6 +129,8 @@ ai:
 
    **Note**: The config file and parent directories (`~/.gitcomm/`) are automatically created if they don't exist. The file is created with restrictive permissions (0600) to protect your API keys.
 
+   **Note**: The `default_provider` field controls which provider is used. To activate OpenRouter, set `default_provider: openrouter` (or pass `--provider openrouter` on the command line) in addition to configuring its `api_key`.
+
    **Environment Variable Placeholders**: You can use `${ENV_VAR_NAME}` syntax in your config file to reference environment variables. Placeholders are automatically replaced with environment variable values when the config is loaded. This allows you to keep sensitive information like API keys out of version control while still using a structured config file.
 
    Example:
@@ -161,6 +163,9 @@ gitcomm
 
 # Use specific provider
 gitcomm --provider openai
+
+# Use OpenRouter provider
+gitcomm --provider openrouter
 
 # Skip AI and use manual input
 gitcomm --skip-ai

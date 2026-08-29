@@ -34,6 +34,8 @@ type AIProviderConfig struct {
 	// Timeout is the optional request timeout (default: 30s)
 	Timeout time.Duration
 
-	// MaxTokens is the optional maximum tokens for response (default: 500)
+	// MaxTokens is the optional maximum tokens for response.
+	// Zero omits the field on OpenAI/OpenRouter (server default) and means 500 on
+	// Anthropic/Mistral (500 is also their default when the config loader is used)
 	MaxTokens int
 }
