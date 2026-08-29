@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/anthropics/anthropic-sdk-go v1.22.1
 	github.com/charmbracelet/huh v0.8.0
-	github.com/charmbracelet/lipgloss v1.1.0
+	github.com/charmbracelet/lipgloss/v2 v2.0.6
 	github.com/gage-technologies/mistral-go v1.1.0
 	github.com/go-git/gcfg/v2 v2.0.2
 	github.com/openai/openai-go/v3 v3.54.0
