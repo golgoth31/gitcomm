@@ -9,7 +9,7 @@ require (
 	github.com/gage-technologies/mistral-go v1.1.0
 	github.com/go-git/gcfg/v2 v2.0.2
 	github.com/openai/openai-go/v3 v3.54.0
-	github.com/rs/zerolog v1.34.0
+	github.com/rs/zerolog v1.35.1
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 )
