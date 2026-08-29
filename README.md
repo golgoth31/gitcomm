@@ -103,6 +103,7 @@ GitComm uses official Go SDKs for AI providers:
 - **OpenAI**: [github.com/openai/openai-go/v3](https://github.com/openai/openai-go) (SDK v3, Responses API)
 - **Anthropic**: [github.com/anthropics/anthropic-sdk-go](https://github.com/anthropics/anthropic-sdk-go)
 - **Mistral**: [github.com/gage-technologies/mistral-go](https://github.com/gage-technologies/mistral-go)
+- **OpenRouter**: via [github.com/openai/openai-go/v3](https://github.com/openai/openai-go) pointed at OpenRouter (Chat Completions API)
 
 1. Configuration file is automatically created at `~/.gitcomm/config.yaml` when you first run GitComm. If the file doesn't exist, it will be created as an empty file with secure permissions (0600). You can also specify a custom path using the `--config` flag.
 
@@ -121,9 +122,14 @@ ai:
     mistral:
       api_key: ${MISTRAL_API_KEY}
       model: mistral-large-latest
+    openrouter:
+      api_key: ${OPENROUTER_API_KEY}
+      model: openrouter/auto
 ```
 
    **Note**: The config file and parent directories (`~/.gitcomm/`) are automatically created if they don't exist. The file is created with restrictive permissions (0600) to protect your API keys.
+
+   **Note**: The `default_provider` field controls which provider is used. To activate OpenRouter, set `default_provider: openrouter` (or pass `--provider openrouter` on the command line) in addition to configuring its `api_key`.
 
    **Environment Variable Placeholders**: You can use `${ENV_VAR_NAME}` syntax in your config file to reference environment variables. Placeholders are automatically replaced with environment variable values when the config is loaded. This allows you to keep sensitive information like API keys out of version control while still using a structured config file.
 
@@ -145,6 +151,8 @@ export OPENAI_API_KEY="your-api-key-here"
 export ANTHROPIC_API_KEY="your-api-key-here"
 # or
 export MISTRAL_API_KEY="your-api-key-here"
+# or
+export OPENROUTER_API_KEY="your-api-key-here"
 ```
 
 3. Use AI generation:
@@ -155,6 +163,9 @@ gitcomm
 
 # Use specific provider
 gitcomm --provider openai
+
+# Use OpenRouter provider
+gitcomm --provider openrouter
 
 # Skip AI and use manual input
 gitcomm --skip-ai

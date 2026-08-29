@@ -193,9 +193,9 @@ func TestOpenAIProvider_ContextCancellation(t *testing.T) {
 	if err == nil {
 		t.Error("Expected error for cancelled context")
 	}
-	// Error should be context-related
+	// Error must preserve its context identity
 	if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
-		t.Logf("Context cancellation error (expected): %v", err)
+		t.Errorf("Expected context-related error, got: %v", err)
 	}
 }
 

@@ -410,7 +410,7 @@ func (s *CommitService) generateWithAIWithRetry(ctx context.Context, repoState *
 
 	providerConfig, err := s.config.GetProviderConfig(providerName)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", utils.ErrAIProviderUnavailable, err)
+		return nil, fmt.Errorf("%w: %w", utils.ErrAIProviderUnavailable, err)
 	}
 
 	// Create AI provider
@@ -422,6 +422,8 @@ func (s *CommitService) generateWithAIWithRetry(ctx context.Context, repoState *
 		aiProvider = ai.NewAnthropicProvider(providerConfig)
 	case "mistral":
 		aiProvider = ai.NewMistralProvider(providerConfig)
+	case "openrouter":
+		aiProvider = ai.NewOpenRouterProvider(providerConfig)
 	case "local":
 		aiProvider = ai.NewLocalProvider(providerConfig)
 	default:
@@ -431,7 +433,12 @@ func (s *CommitService) generateWithAIWithRetry(ctx context.Context, repoState *
 	// Generate commit message
 	aiMessage, err := aiProvider.GenerateCommitMessage(ctx, repoState)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", utils.ErrAIProviderUnavailable, err)
+		// Preserve the error chain so callers can detect context cancellation
+		// or provider-unavailable via errors.Is
+		if errors.Is(err, utils.ErrAIProviderUnavailable) {
+			return nil, err
+		}
+		return nil, fmt.Errorf("%w: %w", utils.ErrAIProviderUnavailable, err)
 	}
 
 	// Parse AI message into CommitMessage structure

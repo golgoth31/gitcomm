@@ -3,8 +3,15 @@ package service
 import (
 	"context"
 	"errors"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/golgoth31/gitcomm/internal/config"
+	"github.com/golgoth31/gitcomm/internal/model"
+	"github.com/golgoth31/gitcomm/internal/utils"
 )
 
 func TestCreateTimeoutContext(t *testing.T) {
@@ -79,5 +86,120 @@ func TestIsTimeoutError(t *testing.T) {
 				t.Errorf("IsTimeoutError() = %v, want %v", result, tt.expected)
 			}
 		})
+	}
+}
+
+// TestCommitService_GenerateWithAIRoutesToOpenRouter verifies the provider switch routes
+// the "openrouter" provider name to the OpenRouter provider
+func TestCommitService_GenerateWithAIRoutesToOpenRouter(t *testing.T) {
+	cfg := &config.Config{
+		AI: config.AIConfig{
+			DefaultProvider: "openrouter",
+			Providers: map[string]model.AIProviderConfig{
+				"openrouter": {Name: "openrouter"},
+			},
+		},
+	}
+
+	s := NewCommitService(nil, &model.CommitOptions{}, cfg)
+
+	state := &model.RepositoryState{
+		StagedFiles: []model.FileChange{
+			{Path: "test.go", Status: "modified", Diff: "func Test() {}"},
+		},
+	}
+
+	_, err := s.generateWithAIWithRetry(context.Background(), state, 0)
+	if err == nil {
+		t.Fatal("Expected error for unconfigured OpenRouter API key")
+	}
+
+	// Error must be wrapped with ErrAIProviderUnavailable (not "unknown provider")
+	if !utils.IsError(err, utils.ErrAIProviderUnavailable) {
+		t.Errorf("Expected ErrAIProviderUnavailable, got: %v", err)
+	}
+
+	// Error must originate from the OpenRouter provider, proving the switch routed to it
+	if !strings.Contains(err.Error(), "OpenRouter") {
+		t.Errorf("Expected error to reference OpenRouter provider, got: %v", err)
+	}
+
+	if strings.Contains(err.Error(), "unknown provider") {
+		t.Errorf("Expected provider switch to route to openrouter, got unknown provider error: %v", err)
+	}
+}
+
+// TestCommitService_GenerateWithAIUnknownProvider verifies unrecognized providers are rejected
+func TestCommitService_GenerateWithAIUnknownProvider(t *testing.T) {
+	cfg := &config.Config{
+		AI: config.AIConfig{
+			DefaultProvider: "nonexistent",
+			Providers: map[string]model.AIProviderConfig{
+				"nonexistent": {Name: "nonexistent"},
+			},
+		},
+	}
+
+	s := NewCommitService(nil, &model.CommitOptions{}, cfg)
+
+	_, err := s.generateWithAIWithRetry(context.Background(), &model.RepositoryState{}, 0)
+	if err == nil {
+		t.Fatal("Expected error for unknown provider")
+	}
+	if !strings.Contains(err.Error(), "unknown provider") {
+		t.Errorf("Expected unknown provider error, got: %v", err)
+	}
+}
+
+// TestCommitService_GenerateWithAIPreservesContextCancellation verifies that context
+// cancellation identity survives the service's error wrapping, so retry logic can
+// distinguish "user cancelled" from "provider failed"
+func TestCommitService_GenerateWithAIPreservesContextCancellation(t *testing.T) {
+	// Server responds slowly so we can cancel while the request is in-flight
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(500 * time.Millisecond)
+	}))
+	defer server.Close()
+
+	cfg := &config.Config{
+		AI: config.AIConfig{
+			DefaultProvider: "openrouter",
+			Providers: map[string]model.AIProviderConfig{
+				"openrouter": {
+					Name:     "openrouter",
+					APIKey:   "sk-or-test",
+					Model:    "openrouter/auto",
+					Endpoint: server.URL,
+					Timeout:  5 * time.Second,
+				},
+			},
+		},
+	}
+
+	s := NewCommitService(nil, &model.CommitOptions{}, cfg)
+
+	state := &model.RepositoryState{
+		StagedFiles: []model.FileChange{
+			{Path: "test.go", Status: "modified", Diff: "func Test() {}"},
+		},
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		cancel()
+	}()
+
+	_, err := s.generateWithAIWithRetry(ctx, state, 0)
+	if err == nil {
+		t.Fatal("Expected error for cancelled context")
+	}
+
+	// Cancellation identity must survive the service-level error wrapping
+	if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
+		t.Errorf("Expected context identity preserved through generateWithAIWithRetry, got: %v", err)
+	}
+	if !utils.IsError(err, utils.ErrAIProviderUnavailable) {
+		t.Errorf("Expected ErrAIProviderUnavailable, got: %v", err)
 	}
 }

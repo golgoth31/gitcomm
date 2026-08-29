@@ -2,6 +2,7 @@ package ai
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -115,6 +116,11 @@ func (p *AnthropicProvider) GenerateCommitMessage(ctx context.Context, repoState
 
 // mapSDKError maps SDK-specific errors to existing error types
 func (p *AnthropicProvider) mapSDKError(err error) error {
+	// Preserve context errors so callers can detect cancellation/deadline via errors.Is
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return err
+	}
+
 	// Check for authentication errors
 	errStr := err.Error()
 	// Map common SDK error patterns to existing error types

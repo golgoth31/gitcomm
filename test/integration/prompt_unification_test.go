@@ -89,6 +89,7 @@ func TestPromptConsistencyAcrossProviders(t *testing.T) {
 		{"OpenAI", ai.NewOpenAIProvider(&model.AIProviderConfig{APIKey: "test-key"})},
 		{"Anthropic", ai.NewAnthropicProvider(&model.AIProviderConfig{APIKey: "test-key"})},
 		{"Mistral", ai.NewMistralProvider(&model.AIProviderConfig{APIKey: "test-key"})},
+		{"OpenRouter", ai.NewOpenRouterProvider(&model.AIProviderConfig{APIKey: "test-key"})},
 		{"Local", ai.NewLocalProvider(&model.AIProviderConfig{Endpoint: "http://localhost:8080"})},
 	}
 
