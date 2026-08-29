@@ -422,6 +422,8 @@ func (s *CommitService) generateWithAIWithRetry(ctx context.Context, repoState *
 		aiProvider = ai.NewAnthropicProvider(providerConfig)
 	case "mistral":
 		aiProvider = ai.NewMistralProvider(providerConfig)
+	case "openrouter":
+		aiProvider = ai.NewOpenRouterProvider(providerConfig)
 	case "local":
 		aiProvider = ai.NewLocalProvider(providerConfig)
 	default:

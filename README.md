@@ -103,6 +103,7 @@ GitComm uses official Go SDKs for AI providers:
 - **OpenAI**: [github.com/openai/openai-go/v3](https://github.com/openai/openai-go) (SDK v3, Responses API)
 - **Anthropic**: [github.com/anthropics/anthropic-sdk-go](https://github.com/anthropics/anthropic-sdk-go)
 - **Mistral**: [github.com/gage-technologies/mistral-go](https://github.com/gage-technologies/mistral-go)
+- **OpenRouter**: via [github.com/openai/openai-go/v3](https://github.com/openai/openai-go) pointed at OpenRouter (Chat Completions API)
 
 1. Configuration file is automatically created at `~/.gitcomm/config.yaml` when you first run GitComm. If the file doesn't exist, it will be created as an empty file with secure permissions (0600). You can also specify a custom path using the `--config` flag.
 
@@ -121,6 +122,9 @@ ai:
     mistral:
       api_key: ${MISTRAL_API_KEY}
       model: mistral-large-latest
+    openrouter:
+      api_key: ${OPENROUTER_API_KEY}
+      model: openrouter/auto
 ```
 
    **Note**: The config file and parent directories (`~/.gitcomm/`) are automatically created if they don't exist. The file is created with restrictive permissions (0600) to protect your API keys.
@@ -145,6 +149,8 @@ export OPENAI_API_KEY="your-api-key-here"
 export ANTHROPIC_API_KEY="your-api-key-here"
 # or
 export MISTRAL_API_KEY="your-api-key-here"
+# or
+export OPENROUTER_API_KEY="your-api-key-here"
 ```
 
 3. Use AI generation:

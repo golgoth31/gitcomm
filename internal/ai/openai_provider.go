@@ -2,6 +2,7 @@ package ai
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -116,8 +117,18 @@ func (p *OpenAIProvider) GenerateCommitMessage(ctx context.Context, repoState *m
 	return content, nil
 }
 
-// mapSDKError maps Responses API-specific errors to existing error types
+// mapSDKError maps OpenAI SDK-specific errors to existing error types
 func (p *OpenAIProvider) mapSDKError(err error) error {
+	return mapOpenAIError(err)
+}
+
+// mapOpenAIError maps OpenAI SDK API errors to existing error types
+func mapOpenAIError(err error) error {
+	// Preserve context errors so callers can detect cancellation/deadline via errors.Is
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return err
+	}
+
 	// Check for authentication errors
 	errStr := err.Error()
 	// Map common Responses API error patterns to existing error types

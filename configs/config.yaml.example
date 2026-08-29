@@ -2,7 +2,7 @@
 # Copy this file to ~/.gitcomm/config.yaml and fill in your API keys
 
 ai:
-  default_provider: openai  # openai, anthropic, mistral, or local
+  default_provider: openai  # openai, anthropic, mistral, openrouter, or local
   providers:
     openai:
       api_key: ${OPENAI_API_KEY}  # Use environment variable
@@ -16,6 +16,11 @@ ai:
       api_key: ${MISTRAL_API_KEY}  # Use environment variable
       model: mistral-large-latest   # Optional, default: mistral-large-latest
       timeout: 30s                  # Optional, default: 30s
+    openrouter:
+      api_key: ${OPENROUTER_API_KEY}  # Use environment variable
+      model: openrouter/auto           # Optional, default: openrouter/auto
+      endpoint: https://openrouter.ai/api/v1  # Optional, default: https://openrouter.ai/api/v1
+      timeout: 30s                    # Optional, default: 30s
     local:
       endpoint: http://localhost:8080/v1/chat/completions  # Required for local models
       api_key: ""                    # Optional

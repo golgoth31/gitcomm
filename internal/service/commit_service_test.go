@@ -3,8 +3,13 @@ package service
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/golgoth31/gitcomm/internal/config"
+	"github.com/golgoth31/gitcomm/internal/model"
+	"github.com/golgoth31/gitcomm/internal/utils"
 )
 
 func TestCreateTimeoutContext(t *testing.T) {
@@ -79,5 +84,67 @@ func TestIsTimeoutError(t *testing.T) {
 				t.Errorf("IsTimeoutError() = %v, want %v", result, tt.expected)
 			}
 		})
+	}
+}
+
+// TestCommitService_GenerateWithAIRoutesToOpenRouter verifies the provider switch routes
+// the "openrouter" provider name to the OpenRouter provider
+func TestCommitService_GenerateWithAIRoutesToOpenRouter(t *testing.T) {
+	cfg := &config.Config{
+		AI: config.AIConfig{
+			DefaultProvider: "openrouter",
+			Providers: map[string]model.AIProviderConfig{
+				"openrouter": {Name: "openrouter"},
+			},
+		},
+	}
+
+	s := NewCommitService(nil, &model.CommitOptions{}, cfg)
+
+	state := &model.RepositoryState{
+		StagedFiles: []model.FileChange{
+			{Path: "test.go", Status: "modified", Diff: "func Test() {}"},
+		},
+	}
+
+	_, err := s.generateWithAIWithRetry(context.Background(), state, 0)
+	if err == nil {
+		t.Fatal("Expected error for unconfigured OpenRouter API key")
+	}
+
+	// Error must be wrapped with ErrAIProviderUnavailable (not "unknown provider")
+	if !utils.IsError(err, utils.ErrAIProviderUnavailable) {
+		t.Errorf("Expected ErrAIProviderUnavailable, got: %v", err)
+	}
+
+	// Error must originate from the OpenRouter provider, proving the switch routed to it
+	if !strings.Contains(err.Error(), "OpenRouter") {
+		t.Errorf("Expected error to reference OpenRouter provider, got: %v", err)
+	}
+
+	if strings.Contains(err.Error(), "unknown provider") {
+		t.Errorf("Expected provider switch to route to openrouter, got unknown provider error: %v", err)
+	}
+}
+
+// TestCommitService_GenerateWithAIUnknownProvider verifies unrecognized providers are rejected
+func TestCommitService_GenerateWithAIUnknownProvider(t *testing.T) {
+	cfg := &config.Config{
+		AI: config.AIConfig{
+			DefaultProvider: "nonexistent",
+			Providers: map[string]model.AIProviderConfig{
+				"nonexistent": {Name: "nonexistent"},
+			},
+		},
+	}
+
+	s := NewCommitService(nil, &model.CommitOptions{}, cfg)
+
+	_, err := s.generateWithAIWithRetry(context.Background(), &model.RepositoryState{}, 0)
+	if err == nil {
+		t.Fatal("Expected error for unknown provider")
+	}
+	if !strings.Contains(err.Error(), "unknown provider") {
+		t.Errorf("Expected unknown provider error, got: %v", err)
 	}
 }
