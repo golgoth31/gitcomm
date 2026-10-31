@@ -137,6 +137,8 @@ github.com/openai/openai-go/v3 v3.54.0 h1:qeNvIpFB/wzX7pI8USN1eruvzCS+XqOZ8mx73l
 github.com/openai/openai-go/v3 v3.54.0/go.mod h1:ufI1+K+t0ijRB3gk8eztiw1crcDpsBuxRQL4sbLIrts=
 github.com/openai/openai-go/v3 v3.90.0 h1:OsAszzODKw2fz6jrasGCdUH8t3Zr8pUEnZAeW7QMKh4=
 github.com/openai/openai-go/v3 v3.90.0/go.mod h1:TQHvyB61TWJ7oEf7wnq4NAM/TatuqnUCJ+qbKj8POsE=
+github.com/openai/openai-go/v3 v3.91.0 h1:8qxJ0t/hZFJ2NBmHz4YXY9VpXA9xnVUzev+KwAzygJA=
+github.com/openai/openai-go/v3 v3.91.0/go.mod h1:TQHvyB61TWJ7oEf7wnq4NAM/TatuqnUCJ+qbKj8POsE=
 github.com/pb33f/ordered-map/v2 v2.3.1 h1:5319HDO0aw4DA4gzi+zv4FXU9UlSs3xGZ40wcP1nBjY=
 github.com/pb33f/ordered-map/v2 v2.3.1/go.mod h1:qxFQgd0PkVUtOMCkTapqotNgzRhMPL7VvaHKbd1HnmQ=
 github.com/pelletier/go-toml/v2 v2.2.4 h1:mye9XuhQ6gvn5h28+VilKrrPoQVanw5PMw/TB0t5Ec4=
