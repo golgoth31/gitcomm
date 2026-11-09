@@ -4,7 +4,7 @@ go 1.27.0
 
 require (
 	charm.land/huh/v2 v2.0.3
-	charm.land/lipgloss/v2 v2.0.6
+	charm.land/lipgloss/v2 v2.1.0
 	github.com/anthropics/anthropic-sdk-go v1.84.0
 	github.com/gage-technologies/mistral-go v1.1.0
 	github.com/go-git/gcfg/v2 v2.0.2
