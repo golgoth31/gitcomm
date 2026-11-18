@@ -7,7 +7,7 @@ require (
 	charm.land/lipgloss/v2 v2.0.6
 	github.com/anthropics/anthropic-sdk-go v1.84.0
 	github.com/gage-technologies/mistral-go v1.1.0
-	github.com/go-git/gcfg/v2 v2.0.2
+	github.com/go-git/gcfg/v2 v2.0.3
 	github.com/openai/openai-go/v3 v3.90.0
 	github.com/rs/zerolog v1.35.1
 	github.com/spf13/cobra v1.10.2
